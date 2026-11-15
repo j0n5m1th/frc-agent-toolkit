@@ -1,0 +1,52 @@
+<!--
+Workflow evaluation for wpilib_nt4_mcp: waiting, capturing, event timing, writes, properties,
+set-default and meta-topics. Runs against evaluations/fake_robot.py, a deterministic NT4 server whose
+signals loop forever, so answers do not depend on when a question is asked. Unlike the read-only evaluations that make_sim_eval.py writes, this one
+sets WRITES to the (throwaway) fake robot; set NT4_ALLOW_WRITES=1 and
+NT4_WRITE_PREFIXES="/Fake/Tunable/,/Fake/Notes/,/Fake/Auto Chooser/".
+run_with_claude_code.py with its fake-robot option does that and restarts the fake robot for every question.
+Expected values were measured through the tools (see evaluations/README.md); rounding in each question
+absorbs sampling jitter.
+-->
+<evaluation>
+  <qa_pair>
+    <question>This robot cycles through match modes on a fixed schedule. How many seconds does it stay in the "teleop" mode during each cycle? Answer with a whole number of seconds.</question>
+    <answer>4</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The robot's arm angle sweeps up and down repeatedly. What is the total range of its motion (highest angle minus lowest angle), in degrees, rounded to the nearest 10? Answer with an integer.</question>
+    <answer>120</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The elevator motor current spikes briefly at regular intervals. How long does a single spike last, rounded to the nearest 0.5 seconds? Answer as a decimal number such as 1.5.</question>
+    <answer>0.5</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Each time the arm angle rises through 45 degrees, how many seconds pass until the elevator current next begins a spike? Round to the nearest whole second and answer with an integer.</question>
+    <answer>2</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Set the robot's setpoint tunable to 7.5 and its gain tunable to 4.0, then report the value of the robot's output command. Answer as a decimal number with one decimal place.</question>
+    <answer>30.0</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Without overriding any value the robot has already chosen, use NetworkTables' weak "default" write to try to set the limit tunable to 99. What is the limit's value afterwards? Answer as a decimal number with one decimal place.</question>
+    <answer>10.0</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Create a new text topic named /Fake/Notes/Owner containing the text "eval" that remains on the server after you stop publishing it (retained). Afterwards, how many retained topics exist under /Fake/Notes? Answer with an integer.</question>
+    <answer>1</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The operator picks "Right" in the autonomous chooser by writing to the chooser's selected-value topic. Which option does the chooser now resolve to? Answer with the option name exactly.</question>
+    <answer>Right</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Of the robot's tunable settings, exactly one is not read by any subscriber inside the robot program itself (as opposed to other connected clients). Which one? Answer with the final path segment of its topic name, with its original capitalization.</question>
+    <answer>Limit</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which topic on the server is flagged so that the server keeps no stored value for it? Answer with the full topic name.</question>
+    <answer>/Fake/Debug/Raw</answer>
+  </qa_pair>
+</evaluation>

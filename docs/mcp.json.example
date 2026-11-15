@@ -1,0 +1,193 @@
+{
+  "mcpServers": {
+    "nt4": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "nt4"
+      ],
+      "env": {
+        "NT4_HOST": "127.0.0.1",
+        "NT4_PORT": "5810",
+        "NT4_READ_ONLY": "1"
+      }
+    },
+    "wpilog": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "wpilog"
+      ],
+      "env": {
+        "WPILOG_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_LOG_FOLDER"
+      }
+    },
+    "sim": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "sim"
+      ],
+      "env": {
+        "SIM_PROJECT_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_ROBOT_PROJECT"
+      }
+    },
+    "vscode": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "vscode"
+      ],
+      "env": {
+        "VSCODE_PROJECT_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_ROBOT_PROJECT"
+      }
+    },
+    "jfr": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "jfr"
+      ],
+      "env": {
+        "JFR_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_RECORDINGS_FOLDER"
+      }
+    },
+    "systemcore": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "systemcore"
+      ],
+      "env": {
+        "SYSTEMCORE_DOWNLOAD_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_A_FOLDER_FOR_DOWNLOADS"
+      }
+    },
+    "ctre-tools": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-tools"
+      ],
+      "env": {
+        "CTRE_PROJECT_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_ROBOT_PROJECT"
+      }
+    },
+    "ctre-owlet": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-owlet"
+      ],
+      "env": {
+        "OWLET_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_HOOT_LOG_FOLDER"
+      }
+    },
+    "ctre-passerine": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-passerine"
+      ],
+      "env": {
+        "PASSERINE_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_MUSIC_FOLDER"
+      }
+    },
+    "ctre-caniv": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-caniv"
+      ],
+      "env": {
+        "CANIV_FIRMWARE_DIR": "REPLACE_WITH_ABSOLUTE_PATH_TO_YOUR_FIRMWARE_FOLDER"
+      }
+    },
+    "ctre-diag": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "plugins/frc",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-diag"
+      ],
+      "env": {
+        "DIAG_HOST": "172.30.0.1"
+      }
+    }
+  }
+}

@@ -1,0 +1,290 @@
+{
+ "nt4": {
+  "full": {
+   "gates-off": {
+    "tools": 11,
+    "names": 121,
+    "defs": 3185,
+    "instructions": 48
+   },
+   "gates-on": {
+    "tools": 13,
+    "names": 145,
+    "defs": 3605,
+    "instructions": 48
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 8,
+    "names": 85,
+    "defs": 1956,
+    "instructions": 36
+   },
+   "gates-on": {
+    "tools": 8,
+    "names": 85,
+    "defs": 1956,
+    "instructions": 36
+   }
+  }
+ },
+ "wpilog": {
+  "full": {
+   "gates-off": {
+    "tools": 10,
+    "names": 113,
+    "defs": 2392,
+    "instructions": 53
+   },
+   "gates-on": {
+    "tools": 10,
+    "names": 113,
+    "defs": 2392,
+    "instructions": 53
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 7,
+    "names": 80,
+    "defs": 1930,
+    "instructions": 45
+   },
+   "gates-on": {
+    "tools": 7,
+    "names": 80,
+    "defs": 1930,
+    "instructions": 45
+   }
+  }
+ },
+ "sim": {
+  "full": {
+   "gates-off": {
+    "tools": 4,
+    "names": 40,
+    "defs": 414,
+    "instructions": 56
+   },
+   "gates-on": {
+    "tools": 4,
+    "names": 40,
+    "defs": 414,
+    "instructions": 56
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 3,
+    "names": 30,
+    "defs": 268,
+    "instructions": 56
+   },
+   "gates-on": {
+    "tools": 3,
+    "names": 30,
+    "defs": 268,
+    "instructions": 56
+   }
+  }
+ },
+ "vscode": {
+  "full": {
+   "gates-off": {
+    "tools": 5,
+    "names": 57,
+    "defs": 572,
+    "instructions": 47
+   },
+   "gates-on": {
+    "tools": 6,
+    "names": 69,
+    "defs": 732,
+    "instructions": 47
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 2,
+    "names": 22,
+    "defs": 243,
+    "instructions": 47
+   },
+   "gates-on": {
+    "tools": 3,
+    "names": 34,
+    "defs": 403,
+    "instructions": 47
+   }
+  }
+ },
+ "systemcore": {
+  "full": {
+   "gates-off": {
+    "tools": 12,
+    "names": 171,
+    "defs": 1270,
+    "instructions": 56
+   },
+   "gates-on": {
+    "tools": 16,
+    "names": 231,
+    "defs": 1651,
+    "instructions": 56
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 10,
+    "names": 142,
+    "defs": 1051,
+    "instructions": 56
+   },
+   "gates-on": {
+    "tools": 11,
+    "names": 156,
+    "defs": 1135,
+    "instructions": 56
+   }
+  }
+ },
+ "jfr": {
+  "full": {
+   "gates-off": {
+    "tools": 7,
+    "names": 71,
+    "defs": 1018,
+    "instructions": 51
+   },
+   "gates-on": {
+    "tools": 8,
+    "names": 81,
+    "defs": 1182,
+    "instructions": 51
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 6,
+    "names": 61,
+    "defs": 872,
+    "instructions": 51
+   },
+   "gates-on": {
+    "tools": 7,
+    "names": 71,
+    "defs": 1036,
+    "instructions": 51
+   }
+  }
+ },
+ "ctre-tools": {
+  "full": {
+   "gates-off": {
+    "tools": 2,
+    "names": 25,
+    "defs": 229,
+    "instructions": 46
+   },
+   "gates-on": {
+    "tools": 3,
+    "names": 37,
+    "defs": 375,
+    "instructions": 46
+   }
+  }
+ },
+ "ctre-owlet": {
+  "full": {
+   "gates-off": {
+    "tools": 4,
+    "names": 50,
+    "defs": 475,
+    "instructions": 47
+   },
+   "gates-on": {
+    "tools": 4,
+    "names": 50,
+    "defs": 475,
+    "instructions": 47
+   }
+  }
+ },
+ "ctre-passerine": {
+  "full": {
+   "gates-off": {
+    "tools": 2,
+    "names": 29,
+    "defs": 197,
+    "instructions": 40
+   },
+   "gates-on": {
+    "tools": 2,
+    "names": 29,
+    "defs": 197,
+    "instructions": 40
+   }
+  }
+ },
+ "ctre-caniv": {
+  "full": {
+   "gates-off": {
+    "tools": 4,
+    "names": 49,
+    "defs": 318,
+    "instructions": 53
+   },
+   "gates-on": {
+    "tools": 6,
+    "names": 74,
+    "defs": 549,
+    "instructions": 53
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 4,
+    "names": 49,
+    "defs": 318,
+    "instructions": 53
+   },
+   "gates-on": {
+    "tools": 4,
+    "names": 49,
+    "defs": 318,
+    "instructions": 53
+   }
+  }
+ },
+ "ctre-diag": {
+  "full": {
+   "gates-off": {
+    "tools": 6,
+    "names": 70,
+    "defs": 651,
+    "instructions": 59
+   },
+   "gates-on": {
+    "tools": 6,
+    "names": 70,
+    "defs": 651,
+    "instructions": 59
+   }
+  },
+  "core": {
+   "gates-off": {
+    "tools": 4,
+    "names": 46,
+    "defs": 438,
+    "instructions": 59
+   },
+   "gates-on": {
+    "tools": 4,
+    "names": 46,
+    "defs": 438,
+    "instructions": 59
+   }
+  }
+ }
+}

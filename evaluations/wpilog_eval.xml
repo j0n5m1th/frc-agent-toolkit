@@ -1,0 +1,37 @@
+<evaluation>
+  <!-- Questions about the practice log written by evaluations/fake_log.py (a deterministic 30 second match).
+       Run: uv run python evaluations/run_with_claude_code.py with the practice-log flag (see that file's docstring).
+       tests/wpilog/test_wpilog_eval.py recomputes every answer from the log, so they cannot drift. -->
+  <qa_pair>
+    <question>Using the practice log, how many seconds long is the log? Answer with just a whole number.</question>
+    <answer>30</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the practice log, how many separate times did the elevator current go above 40 amps while the robot was enabled in autonomous mode? Answer with just a whole number.</question>
+    <answer>3</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the lowest battery voltage in the practice log, in volts? Answer with just the number.</question>
+    <answer>11.475</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the practice log, how many seconds after autonomous began was the first elevator current spike above 40 amps that happened during autonomous? Answer with just a whole number.</question>
+    <answer>3</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the practice log, at what time in whole seconds from the start of the log was the ERROR message logged? Answer with just a whole number.</question>
+    <answer>22</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What was the highest forward speed (vx) in meters per second the robot reached during autonomous in the practice log? Answer with just a whole number.</question>
+    <answer>2</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>For how many seconds was the robot enabled in teleop mode in the practice log? Answer with just a whole number.</question>
+    <answer>10</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the practice log, how far had the robot driven forward (the x position in meters) 10 seconds after autonomous began? Answer with just a whole number.</question>
+    <answer>15</answer>
+  </qa_pair>
+</evaluation>

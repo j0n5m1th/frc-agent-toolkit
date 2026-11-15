@@ -1,0 +1,23 @@
+name: Feature request
+description: A question you wish it could answer, or a tool you would like
+labels: [enhancement]
+body:
+  - type: textarea
+    id: want
+    attributes:
+      label: What would you like to ask or do?
+      description: Say it the way you would ask the assistant.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does your team need it?
+      description: What do you do today instead?
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Links, example logs (remove private data first), ideas for how it could work.

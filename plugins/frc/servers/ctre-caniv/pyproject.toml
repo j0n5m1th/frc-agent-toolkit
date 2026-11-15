@@ -1,0 +1,29 @@
+[project]
+name = "frc-mcp-ctre-caniv"
+version = "0.1.0"
+description = "MCP server for the CTRE CANivore tool"
+requires-python = ">=3.13"
+dependencies = [
+    "fastmcp-slim[client,server]>=4.1.3,<5",  # the `fastmcp` metapackage is exactly these two extras
+    "pydantic>=2.7,<3",
+    "frc-mcp-core",
+    "frc-mcp-ctre",
+]
+
+[project.scripts]
+# The old per-server command name: an alias for one release, drop it next release. `frc-mcp ctre-caniv` replaces it.
+mcp-ctre-caniv = "frc_mcp_ctre_caniv.spec:main"
+
+[project.entry-points."frc_mcp.servers"]
+ctre-caniv = "frc_mcp_ctre_caniv.spec:SPEC"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["frc_mcp_ctre_caniv"]
+
+[tool.uv.sources]
+frc-mcp-core = { workspace = true }
+frc-mcp-ctre = { workspace = true }

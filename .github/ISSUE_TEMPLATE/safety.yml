@@ -1,0 +1,28 @@
+name: Safety concern
+description: A tool could hurt a robot, delete data, or expose a secret (not an exploitable vulnerability)
+labels: [safety]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for things like a tool that changes more than it says, or a switch that does not block what it should.
+        **If someone could exploit it to attack a computer or robot, do not post it here.** Report it privately: see SECURITY.md.
+        Never paste passwords, keys or tokens.
+  - type: textarea
+    id: what
+    attributes:
+      label: What could go wrong?
+      description: Which tool or setting, and what would happen to the robot, the computer or a secret.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How did you see it, or how would it happen?
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Your setup
+      description: Assistant, operating system, and whether a real robot was connected.

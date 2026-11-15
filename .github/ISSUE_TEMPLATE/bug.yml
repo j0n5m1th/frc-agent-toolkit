@@ -1,0 +1,45 @@
+name: Bug report
+description: Something broke, gave a wrong answer, or was confusing
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Short and honest is great. If the tools could hurt a robot or leak a secret, use **Safety concern** instead.
+        Never paste passwords, keys or tokens.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it?
+      options:
+        - Something broke
+        - A wrong or too-sure answer
+        - Setup or docs were confusing
+    validations:
+      required: true
+  - type: textarea
+    id: asked
+    attributes:
+      label: What did you ask the assistant?
+      description: Paste your prompt.
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened, and what did you expect?
+      description: Include what the tool returned if you can (not only the assistant's summary).
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Your setup
+      description: "Assistant (Claude Code version, ...), operating system, and the robot (real robot, WPILib sim, or the practice robot from `frc-mcp demo robot`)."
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Error messages, screenshots, how long setup took.
