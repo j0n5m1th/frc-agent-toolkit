@@ -1,0 +1,66 @@
+name: Tests
+
+# Runs on every pull request to the default branch and on pushes to it, on Linux, Windows and macOS.
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.7"
+          enable-cache: true
+          cache-dependency-glob: plugins/frc/uv.lock
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with: # the profiling tests record a real JVM
+          distribution: temurin
+          java-version: "21"
+      - name: Lock file matches pyproject.toml
+        run: uv lock --check --project plugins/frc
+      - name: Install
+        run: uv sync --project plugins/frc --group dev --frozen --python 3.13
+      - name: Run tests
+        run: uv run --project plugins/frc --group dev --python 3.13 python -m pytest -q -p no:cacheprovider
+      - name: Type check
+        run: uv run --project plugins/frc --group dev --python 3.13 mypy
+      - name: Lint
+        run: uv run --project plugins/frc --group dev --python 3.13 ruff check plugins/frc tests evaluations functional_tests
+
+  plugin-validate:
+    name: Plugin validate (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Advisory: installing the Claude Code CLI here is not verified yet, so this job cannot block a merge.
+    # The owner removes continue-on-error once it is seen to work.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code@2.1.308
+      - name: Validate marketplace
+        run: claude plugin validate .
+      - name: Validate plugin (strict)
+        run: claude plugin validate --strict plugins/frc

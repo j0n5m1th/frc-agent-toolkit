@@ -1,0 +1,53 @@
+{
+  "description": "Sets up the plugin's Python environment before the servers start, so the first start is not slow (prints nothing), and makes Claude Code ask a person before any tool that changes the robot, a device or this computer, or that load the robot controller (and block the call if that check itself fails).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv",
+            "args": [
+              "sync",
+              "--quiet",
+              "--project",
+              "${CLAUDE_PLUGIN_ROOT}",
+              "--frozen",
+              "--no-dev",
+              "--python",
+              "3.13"
+            ],
+            "timeout": 180
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^mcp__plugin_frc-toolkit_[a-z0-9-]+__(nt4_set_value|nt4_release_publisher|wpilib_deploy|wpilib_vendordep|wpilib_set_team|jfr_record|jfr_live|ctre_install|caniv_configure|caniv_flash|systemcore_restart_robot_code|systemcore_reboot|systemcore_provision|systemcore_ssh_forget|systemcore_logs_prune|systemcore_bundle|systemcore_connect|systemcore_disconnect)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv",
+            "args": [
+              "run",
+              "--project",
+              "${CLAUDE_PLUGIN_ROOT}",
+              "--frozen",
+              "--no-dev",
+              "--python",
+              "3.13",
+              "frc-mcp",
+              "hook",
+              "ask",
+              "This FRC tool changes the robot, a device or this computer, or loads the robot controller (not in a match). Confirm it?"
+            ],
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ]
+  }
+}

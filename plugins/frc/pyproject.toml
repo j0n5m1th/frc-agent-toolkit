@@ -1,0 +1,70 @@
+[project]
+name = "frc-mcp"
+version = "0.1.0"
+description = "MCP servers: WPILib robots (live NetworkTables 4 mcp-wpilib-nt4, recorded .wpilog files mcp-wpilib-wpilog, desktop simulation mcp-wpilib-sim, VS Code commands mcp-wpilib-vscode, Systemcore controller mcp-systemcore), standalone Java profiling with JFR (mcp-jfr), and CTRE tools: version manager (mcp-ctre-tools) Owlet hoot-to-wpilog (mcp-ctre-owlet), passerine MIDI-to-CHRP (mcp-ctre-passerine) caniv CANivore tool (mcp-ctre-caniv) and Phoenix Diagnostic Server reader (mcp-ctre-diag)"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "Jon Smith" }]
+keywords = ["mcp", "frc", "wpilib", "networktables", "wpilog", "robotics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.13"
+dependencies = [
+    "frc-mcp-core",
+    "frc-mcp-nt4",
+    "frc-mcp-wpilog",
+    "frc-mcp-sim",
+    "frc-mcp-vscode",
+    "frc-mcp-systemcore",
+    "frc-mcp-jfr",
+    "frc-mcp-ctre-tools",
+    "frc-mcp-ctre-owlet",
+    "frc-mcp-ctre-passerine",
+    "frc-mcp-ctre-caniv",
+    "frc-mcp-ctre-diag",
+]
+
+[project.scripts]
+frc-mcp = "frc_mcp_core.command:main"
+
+[project.urls]
+Homepage = "https://github.com/j0n5m1th/frc-agent-toolkit"
+Issues = "https://github.com/j0n5m1th/frc-agent-toolkit/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# `frc-mcp` is only the bundle: it holds no code of its own, so its wheel is empty on purpose.
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.uv.workspace]
+members = ["servers/*", "lib/*"]
+
+[tool.uv.sources]
+frc-mcp-core = { workspace = true }
+frc-mcp-nt4 = { workspace = true }
+frc-mcp-wpilog = { workspace = true }
+frc-mcp-sim = { workspace = true }
+frc-mcp-vscode = { workspace = true }
+frc-mcp-systemcore = { workspace = true }
+frc-mcp-jfr = { workspace = true }
+frc-mcp-ctre-tools = { workspace = true }
+frc-mcp-ctre-owlet = { workspace = true }
+frc-mcp-ctre-passerine = { workspace = true }
+frc-mcp-ctre-caniv = { workspace = true }
+frc-mcp-ctre-diag = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.10",  # the lint step in CI runs this locked copy instead of uvx
+    "types-paramiko>=5.1.0.20261030",
+    "types-protobuf>=7.35.1.20260906",
+]

@@ -1,0 +1,34 @@
+[project]
+name = "frc-mcp-systemcore"
+version = "0.1.0"
+description = "MCP server for the Systemcore robot controller"
+requires-python = ">=3.13"
+dependencies = [
+    "cryptography>=50",  # imported directly by the controller server (paramiko also needs it)
+    "fastmcp-slim[client,server]>=4.1.3,<5",  # the `fastmcp` metapackage is exactly these two extras
+    "paramiko>=4",
+    "pydantic>=2.7,<3",
+    "pyntcore>=2026.2.2",
+    "frc-mcp-core",
+    "frc-mcp-wpilib",
+    "frc-mcp-systemcore-common",
+]
+
+[project.scripts]
+# The old per-server command name: an alias for one release, drop it next release. `frc-mcp systemcore` replaces it.
+mcp-systemcore = "frc_mcp_systemcore.spec:main"
+
+[project.entry-points."frc_mcp.servers"]
+systemcore = "frc_mcp_systemcore.spec:SPEC"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["frc_mcp_systemcore"]
+
+[tool.uv.sources]
+frc-mcp-core = { workspace = true }
+frc-mcp-wpilib = { workspace = true }
+frc-mcp-systemcore-common = { workspace = true }

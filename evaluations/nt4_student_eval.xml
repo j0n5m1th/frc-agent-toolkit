@@ -1,0 +1,27 @@
+<!-- Read-only student scenarios for a fresh evaluations/fake_robot.py. -->
+<evaluation>
+  <qa_pair>
+    <question>Our elevator motor publishes its electrical current, but I don't know the topic name. Find it and answer with its full topic name exactly.</question>
+    <answer>/Fake/Elevator/Current</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the autonomous chooser and inspect its data. When neither an active nor selected value is set, what option is its default candidate? Answer with the option name only; this does not prove what the robot actually chose.</question>
+    <answer>Center</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which of the robot's tunable settings has no subscriber inside the robot program itself? Discover the setting and answer with the last segment of its topic name exactly.</question>
+    <answer>Limit</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the elevator current and observe it for at least 7 seconds. Did you observe at least one transition from at or below 40 amps to above 40 amps? Answer YES or NO based only on what was observed, not an assumption that all upstream updates arrived.</question>
+    <answer>YES</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the robot's arm-angle topic and inspect its last-update age. Does an old or unavailable update age by itself prove the sensor is broken? Answer YES or NO.</question>
+    <answer>NO</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the elevator-current topic. If an event history is overwritten or a connection gap occurs, does the absence of a retained event prove that no event happened? Answer YES or NO.</question>
+    <answer>NO</answer>
+  </qa_pair>
+</evaluation>

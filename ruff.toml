@@ -1,0 +1,7 @@
+# Lint settings for the whole repository (run from the repository root).
+[lint]
+select = ["E", "F", "W", "B", "UP", "SIM", "RET", "I"]
+ignore = ["E501"]  # long lines are fine: descriptions are the UI
+
+[lint.isort]
+known-first-party = ["frc_mcp_nt4", "frc_mcp_wpilog", "frc_mcp_sim", "frc_mcp_vscode", "frc_mcp_systemcore", "frc_mcp_jfr", "frc_mcp_ctre_tools", "frc_mcp_ctre_owlet", "frc_mcp_ctre_passerine", "frc_mcp_ctre_caniv", "frc_mcp_ctre_diag", "frc_mcp_core", "frc_mcp_wpilib", "frc_mcp_ctre", "frc_mcp_systemcore_common"]  # stdlib, third party, this package, then relative imports

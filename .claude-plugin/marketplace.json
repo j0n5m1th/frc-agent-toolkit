@@ -1,0 +1,17 @@
+{
+  "name": "frc-toolkit",
+  "description": "Helps FIRST Robotics (FRC) teams debug robots with an AI assistant: live robot data, match logs, simulation, Systemcore and CTRE devices.",
+  "owner": { "name": "Jon Smith" },
+  "plugins": [
+    {
+      "name": "frc-toolkit",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/j0n5m1th/frc-agent-toolkit.git",
+        "path": "plugins/frc",
+        "ref": "v0.1.0"
+      },
+      "description": "Helps FIRST Robotics (FRC) teams debug robots with an AI assistant: live robot data, match logs, simulation, Systemcore and CTRE devices."
+    }
+  ]
+}

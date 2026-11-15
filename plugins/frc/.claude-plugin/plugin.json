@@ -1,0 +1,101 @@
+{
+  "name": "frc-toolkit",
+  "description": "Helps FIRST Robotics (FRC) teams debug robots with an AI assistant: live robot data, match logs, simulation, Systemcore and CTRE devices.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Jon Smith"
+  },
+  "homepage": "https://github.com/j0n5m1th/frc-agent-toolkit/tree/master/docs",
+  "repository": "https://github.com/j0n5m1th/frc-agent-toolkit",
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "frc",
+    "first-robotics",
+    "wpilib",
+    "networktables",
+    "robot-logs",
+    "ctre",
+    "phoenix",
+    "systemcore"
+  ],
+  "userConfig": {
+    "nt4_host": {
+      "type": "string",
+      "title": "NetworkTables host",
+      "description": "Robot or simulator address. 127.0.0.1 is the simulator on this computer.",
+      "default": "127.0.0.1"
+    },
+    "systemcore_host": {
+      "type": "string",
+      "title": "Systemcore address",
+      "description": "Leave empty to find it automatically (Wi-Fi: 172.30.0.1).",
+      "default": ""
+    },
+    "diag_host": {
+      "type": "string",
+      "title": "Controller address for CTRE diagnostics",
+      "description": "Where the Phoenix Diagnostic Server runs. Empty means the Systemcore's own Wi-Fi address, 172.30.0.1.",
+      "default": ""
+    },
+    "nt4_read_only": {
+      "type": "boolean",
+      "title": "NetworkTables read-only",
+      "description": "On: never write to the robot. Applies to every project. Off alone does not allow writes: see docs/SETTINGS.md.",
+      "default": true
+    },
+    "allow_record": {
+      "type": "boolean",
+      "title": "Allow recording Java programs with JFR",
+      "description": "On: the assistant may attach to a running Java program and record it. Reading recordings always works. Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_deploy": {
+      "type": "boolean",
+      "title": "Allow deploying code to the robot",
+      "description": "On: the assistant may deploy robot code (it still asks you first). Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_prune": {
+      "type": "boolean",
+      "title": "Allow deleting Systemcore logs",
+      "description": "On: the assistant may delete old logs on the Systemcore (a dry run and a counted confirmation still apply). Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_provision": {
+      "type": "boolean",
+      "title": "Allow installing the SSH key on the Systemcore",
+      "description": "On: the assistant may install this server's SSH key on the Systemcore (it asks you first). Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_wifi_join": {
+      "type": "boolean",
+      "title": "Allow joining the Systemcore Wi-Fi from this computer",
+      "description": "On: the assistant may join or leave the robot Wi-Fi, which drops your current Wi-Fi (it asks you first). Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_restart": {
+      "type": "boolean",
+      "title": "Allow restarting robot code and rebooting the Systemcore",
+      "description": "On: the assistant may restart robot code or reboot the Systemcore (it asks first, and never while the robot is enabled). Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_ctre_install": {
+      "type": "boolean",
+      "title": "Allow installing CTRE tools",
+      "description": "On: the assistant may download CTRE tools such as Owlet from CTRE's website (it asks you first). Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_caniv_config": {
+      "type": "boolean",
+      "title": "Allow renaming or resetting a CANivore",
+      "description": "On: the assistant may rename or reset a CANivore (it asks you first). Applies to every project, so turn it off after use.",
+      "default": false
+    },
+    "allow_caniv_flash": {
+      "type": "boolean",
+      "title": "Allow flashing CANivore firmware",
+      "description": "On: the assistant may flash firmware onto a CANivore (it asks you first). Applies to every project, so turn it off after use.",
+      "default": false
+    }
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "mcpServers": {
+    "nt4": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "nt4"
+      ],
+      "env": {
+        "NT4_HOST": "${user_config.nt4_host}",
+        "NT4_READ_ONLY": "${user_config.nt4_read_only}"
+      }
+    },
+    "wpilog": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "wpilog"
+      ],
+      "env": {
+        "WPILOG_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
+    },
+    "sim": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "sim"
+      ],
+      "env": {
+        "SIM_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
+    },
+    "vscode": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "vscode"
+      ],
+      "env": {
+        "VSCODE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}",
+        "VSCODE_ALLOW_DEPLOY": "${user_config.allow_deploy}"
+      }
+    },
+    "jfr": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "jfr"
+      ],
+      "env": {
+        "JFR_DIR": "${CLAUDE_PROJECT_DIR}",
+        "JFR_ALLOW_RECORD": "${user_config.allow_record}"
+      }
+    },
+    "systemcore": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "systemcore"
+      ],
+      "env": {
+        "SYSTEMCORE_HOST": "${user_config.systemcore_host}",
+        "SYSTEMCORE_ALLOW_PRUNE": "${user_config.allow_prune}",
+        "SYSTEMCORE_ALLOW_PROVISION": "${user_config.allow_provision}",
+        "SYSTEMCORE_ALLOW_WIFI_JOIN": "${user_config.allow_wifi_join}",
+        "SYSTEMCORE_ALLOW_RESTART": "${user_config.allow_restart}"
+      }
+    },
+    "ctre-tools": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-tools"
+      ],
+      "env": {
+        "CTRE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}",
+        "CTRE_ALLOW_INSTALL": "${user_config.allow_ctre_install}"
+      }
+    },
+    "ctre-owlet": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-owlet"
+      ],
+      "env": {
+        "OWLET_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
+    },
+    "ctre-passerine": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-passerine"
+      ],
+      "env": {
+        "PASSERINE_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
+    },
+    "ctre-caniv": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-caniv"
+      ],
+      "env": {
+        "CANIV_ALLOW_CONFIG": "${user_config.allow_caniv_config}",
+        "CANIV_ALLOW_FLASH": "${user_config.allow_caniv_flash}"
+      }
+    },
+    "ctre-diag": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "--frozen",
+        "--no-dev",
+        "--python",
+        "3.13",
+        "frc-mcp",
+        "ctre-diag"
+      ],
+      "env": {
+        "DIAG_HOST": "${user_config.diag_host}"
+      }
+    }
+  }
+}
