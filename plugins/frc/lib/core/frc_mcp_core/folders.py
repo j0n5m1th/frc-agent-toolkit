@@ -10,7 +10,9 @@ import logging
 import os
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from .settings import env_str
 
@@ -43,6 +45,13 @@ def check_size(path: Path, limit_bytes: int, env_name: str, error: type[Exceptio
 def inside(path: Path, roots: Iterable[Path]) -> bool:
     """True if `path` (already resolved) is one of the `roots` or below one."""
     return any(path.is_relative_to(root) for root in roots)
+
+
+def file_row(path: Path, roots: Iterable[Path]) -> dict[str, Any]:
+    """One list-tool row: `file` (relative to the folder it is under), `mb` and `modified`."""
+    info = path.stat()
+    shown = next((str(path.relative_to(root)) for root in roots if path.is_relative_to(root)), str(path))
+    return {"file": shown, "mb": round(info.st_size / 2**20, 1), "modified": datetime.fromtimestamp(info.st_mtime).strftime("%Y-%m-%d %H:%M")}
 
 
 def _is_link(path: Path) -> bool:

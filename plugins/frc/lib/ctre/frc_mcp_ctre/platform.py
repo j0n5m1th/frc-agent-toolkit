@@ -29,7 +29,3 @@ def platform_key() -> str:
         if machine.startswith("armv7"):
             return "linuxarm32"
     raise CtreError(f"CTRE publishes no tools for {sys.platform}/{machine}. Set CTRE_PLATFORM to a key from the index to override.")
-
-
-def is_windows(key: str) -> bool:
-    return key.startswith("windows")

@@ -179,7 +179,8 @@ def select_signals(signals: list[Signal], wanted: list[str] | None, name_contain
 
 def split_parts(target: Path) -> list[Path]:
     """The extra files Owlet starts at 1 GB: `name.2.wpilog`, `name.3.wpilog`..."""
-    return sorted(p for p in target.parent.iterdir() if re.match(_SPLIT.format(stem=re.escape(target.stem)), p.name))
+    pattern = re.compile(_SPLIT.format(stem=re.escape(target.stem)))
+    return sorted(p for p in target.parent.iterdir() if pattern.match(p.name))
 
 
 def _remove_outputs(target: Path, before: set[Path]) -> None:

@@ -71,16 +71,18 @@ def nt_type(log_type: str) -> str:
     return log_type
 
 
+_DECODERS: dict[str, Callable[[DataLogRecord], Any]] = {
+    "boolean": DataLogRecord.getBoolean, "int64": DataLogRecord.getInteger, "float": DataLogRecord.getFloat,
+    "double": DataLogRecord.getDouble, "string": DataLogRecord.getString, "json": DataLogRecord.getString,
+    "boolean[]": DataLogRecord.getBooleanArray, "int64[]": DataLogRecord.getIntegerArray,
+    "float[]": DataLogRecord.getFloatArray, "double[]": DataLogRecord.getDoubleArray,
+    "string[]": DataLogRecord.getStringArray,
+}
+
+
 def _decoder(log_type: str) -> Callable[[DataLogRecord], Any]:
     """How to read a record's payload for `log_type`; raises on a payload of the wrong size."""
-    table: dict[str, Callable[[DataLogRecord], Any]] = {
-        "boolean": DataLogRecord.getBoolean, "int64": DataLogRecord.getInteger, "float": DataLogRecord.getFloat,
-        "double": DataLogRecord.getDouble, "string": DataLogRecord.getString, "json": DataLogRecord.getString,
-        "boolean[]": DataLogRecord.getBooleanArray, "int64[]": DataLogRecord.getIntegerArray,
-        "float[]": DataLogRecord.getFloatArray, "double[]": DataLogRecord.getDoubleArray,
-        "string[]": DataLogRecord.getStringArray,
-    }
-    return table.get(log_type) or (lambda rec: bytes(rec.getRaw()))  # raw, msgpack, struct:*, proto:*, ...
+    return _DECODERS.get(log_type) or (lambda rec: bytes(rec.getRaw()))  # raw, msgpack, struct:*, proto:*, ...
 
 
 @dataclass
