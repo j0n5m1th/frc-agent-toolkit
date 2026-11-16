@@ -4,6 +4,9 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+- WPILib 2027 (alpha-8) support in the skills: new `wpilib-project/references/2027.md` (renames and removals, OpModes, Commands v3, Telemetry and Tunables, gamepads, simulation), and `wpilib-build` and `wpilib-live-check` now know the Java 25 and import rules
+- The WPILib install folder on Linux also looks in `$XDG_DATA_HOME/wpilib` (where the 2027 installer puts it)
+- `sim_start` accepts the Gradle `run` task and uses it by default for a 2027 project, and refuses `simulateJava` there, because GradleRIO 2027 made `simulateJava` fail on purpose (checked on a real alpha-8 project)
 - New subagent `match-log-analyst`: reads `.wpilog`, `.hoot` and JFR files with read-only tools in its own context and returns a short summary of what happened, when, the likely cause and the evidence.
 
 ## [0.1.0]

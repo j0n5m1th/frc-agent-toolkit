@@ -15,6 +15,24 @@ def test_only_simulate_tasks_are_allowed():
             config.check_task(bad)
 
 
+def test_run_is_the_only_other_task_allowed():
+    assert config.check_task("run") == "run"
+    for bad in ("runShadow", "run; calc", "Run", "deploy"):
+        with pytest.raises(SimError):
+            config.check_task(bad)
+
+
+def test_default_task_is_run_for_a_2027_project(tmp_path, monkeypatch):
+    monkeypatch.delenv("SIM_TASK", raising=False)
+    (tmp_path / "build.gradle").write_text('plugins { id "org.wpilib.GradleRIO" version "2027.0.0-alpha-8" }\n', encoding="utf-8")
+    assert config.default_task(tmp_path) == "run"
+    (tmp_path / "build.gradle").write_text('plugins { id "edu.wpi.first.GradleRIO" version "2026.2.1" }\n', encoding="utf-8")
+    assert config.default_task(tmp_path) == "simulateJava"
+    assert config.default_task() == "simulateJava"
+    monkeypatch.setenv("SIM_TASK", "simulateJavaAgent")
+    assert config.default_task(tmp_path) == "simulateJavaAgent"
+
+
 def test_properties_become_plain_p_arguments():
     assert config.source.props_to_args({"mode": "auto:Middle", "headless": "", "stickScript": "1-3:ly=-1;5-7:lx=-0.5,rx=0.3"}) == [
         "-Pmode=auto:Middle", "-Pheadless", "-PstickScript=1-3:ly=-1;5-7:lx=-0.5,rx=0.3"]
@@ -87,3 +105,16 @@ def test_fold_ignores_numbers_and_keeps_first_seen_order():
     for text in ("Loop 0.005s overrun 1", "other", "Loop 0.007s overrun 2"):
         console.add(text)
     assert fold(console.select()) == ["1 Loop 0.005s overrun 1 (x2)", "2 other"]
+
+
+def test_simulate_java_is_refused_on_a_2027_project(tmp_path, monkeypatch):
+    monkeypatch.delenv("SIM_TASK", raising=False)
+    (tmp_path / "build.gradle").write_text('plugins { id "org.wpilib.GradleRIO" version "2027.0.0-alpha-8" }\n', encoding="utf-8")
+    with pytest.raises(SimError, match="removed the simulateJava"):
+        config.check_task_for("simulateJava", tmp_path)
+    assert config.check_task_for("run", tmp_path) == "run"
+    monkeypatch.setenv("SIM_TASK", "simulateJava")
+    with pytest.raises(SimError, match="removed the simulateJava"):
+        config.default_task(tmp_path)
+    (tmp_path / "build.gradle").write_text('plugins { id "edu.wpi.first.GradleRIO" version "2026.2.1" }\n', encoding="utf-8")
+    assert config.check_task_for("simulateJava", tmp_path) == "simulateJava"

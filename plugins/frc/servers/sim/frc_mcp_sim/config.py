@@ -5,10 +5,12 @@ the commands server; see frc_mcp_wpilib/gradle/jdk.py.
 """
 
 import re
+from pathlib import Path
 
 from frc_mcp_core.settings import env_int, env_number, env_str
 from frc_mcp_core.toolset import Toolset
-from frc_mcp_wpilib.gradle.project import ProjectSource
+from frc_mcp_wpilib.gradle import buildfile
+from frc_mcp_wpilib.gradle.project import ProjectSource, read_build_text
 
 from .errors import SimError
 
@@ -20,13 +22,29 @@ TOOLSET = Toolset("SIM_TOOLSET", SimError)  # read it with TOOLSET.current(); `c
 
 
 def check_task(task: str) -> str:
-    if not _TASK_RE.fullmatch(task):
-        raise SimError(f"Only Gradle tasks named simulate* can be run (for example simulateJava); {task!r} is not one.")
+    if task != "run" and not _TASK_RE.fullmatch(task):  # `run` is the 2027 way: GradleRIO 2027 made simulateJava fail on purpose
+        raise SimError(f"Only the Gradle tasks run and simulate* can be run (for example simulateJava); {task!r} is not one.")
     return task
 
 
-def default_task() -> str:
-    return check_task(env_str("SIM_TASK", "simulateJava") or "simulateJava")
+def _is_2027(project: Path) -> bool:
+    return str(buildfile.facts(read_build_text(project)).get("gradlerio", "")).startswith("2027")
+
+
+def check_task_for(task: str, project: Path) -> str:
+    """`check_task`, and refuse `simulateJava` on a 2027 project, where GradleRIO makes it fail with a message the console tail hides."""
+    if check_task(task) == "simulateJava" and _is_2027(project):
+        raise SimError("GradleRIO 2027 removed the simulateJava task; it only fails. Use the `run` task (leave `task` empty, and unset SIM_TASK if it names simulateJava).")
+    return task
+
+
+def default_task(project: Path | None = None) -> str:
+    """SIM_TASK, else `run` for a 2027 GradleRIO project (its `simulateJava` only throws), else `simulateJava`."""
+    if configured := env_str("SIM_TASK"):
+        return check_task_for(configured, project) if project is not None else check_task(configured)
+    if project is not None and _is_2027(project):
+        return "run"
+    return "simulateJava"
 
 
 def nt_port() -> int:

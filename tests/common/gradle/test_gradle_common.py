@@ -79,12 +79,22 @@ def test_the_chosen_jdk_is_described_with_where_it_came_from(tmp_path):
 
 
 def test_the_wpilib_folder_is_the_named_one_or_this_systems_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "no-xdg"))  # a Linux machine with the 2027 folder must not change the default asserted here
     monkeypatch.setenv("WPILIB_HOME", str(tmp_path / "wpilib"))
     assert wpilib_home() == tmp_path / "wpilib"
     monkeypatch.setenv("WPILIB_HOME", "   ")  # blank counts as unset
     assert wpilib_home() == (Path("C:/Users/Public/wpilib") if os.name == "nt" else Path.home() / "wpilib")
     monkeypatch.delenv("WPILIB_HOME")
     assert wpilib_home() == (Path("C:/Users/Public/wpilib") if os.name == "nt" else Path.home() / "wpilib")
+
+
+def test_the_linux_2027_install_folder_is_used_when_it_exists(tmp_path, monkeypatch):
+    monkeypatch.delenv("WPILIB_HOME", raising=False)
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
+    monkeypatch.setattr("sys.platform", "linux")
+    assert wpilib_home() == Path.home() / "wpilib"  # no XDG folder yet: the 2026 default
+    (tmp_path / "data" / "wpilib").mkdir(parents=True)
+    assert wpilib_home() == tmp_path / "data" / "wpilib"
 
 
 def test_preferences_are_only_taken_when_they_are_a_json_object(tmp_path):

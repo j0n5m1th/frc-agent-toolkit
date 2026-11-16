@@ -24,7 +24,7 @@ def _check(_args: argparse.Namespace) -> int:
     print(f"Looking in: {', '.join(str(r) for r in config.source.roots())}")
     try:
         project = config.source.resolve()
-        task = config.default_task()
+        task = config.default_task(project)
         java = jdk.describe(jdk.select(project, SimError))
         port = config.nt_port()
     except WPILibMCPError as e:  # every setting here reports itself the way the tools do

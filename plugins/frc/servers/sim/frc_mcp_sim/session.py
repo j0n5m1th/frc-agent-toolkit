@@ -46,7 +46,7 @@ class Session:
             wrapper = gradlew(folder)
             if wrapper is None:  # explicit so `python -O` keeps the message
                 raise SimError(f"{folder} has no Gradle wrapper; give a project folder with gradlew.")
-            chosen = config.check_task(task) if task else config.default_task()
+            chosen = config.check_task_for(task, folder) if task else config.default_task(folder)
             args = config.source.props_to_args(props)
             cap = config.max_run_s()
             if run_s is not None and run_s > cap:

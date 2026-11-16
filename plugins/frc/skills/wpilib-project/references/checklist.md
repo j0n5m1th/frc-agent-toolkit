@@ -149,25 +149,7 @@ Sources:
 
 These are silent breaking changes or new rules, for projects on the 2027 alphas.
 
-**WPILib** [WL/yearly-overview/yearly-changelog.html]
-- Packages moved from `edu.wpi.first` to `org.wpilib`.
-- `robotInit` is removed; setup goes in the constructor.
-- Test mode is now Utility mode.
-- `SmartDashboard`/`SendableChooser` are replaced by the Telemetry/Tunables APIs.
-- `MotorController.set` is now `setThrottle`.
-- `Command.schedule()` is deprecated.
-- Mutable units are removed.
-- `Rotation2d` getters return wrapped angles.
-- Integer (raw) timestamps are in nanoseconds; datalog and NetworkTables still use microseconds.
-- `DriverStation` is split into smaller classes, mainly `MatchState` and `RobotState`.
-
-**OpModes** [WL/software/basic-programming/opmodes.html]
-- `start()` must return quickly.
-- `addPeriodic` callbacks also run while disabled, so guard actuator code with `isEnabled()`.
-
-**Commands v3** [WL/software/commandbased/commands-v3/troubleshooting.html]
-- Every `while` loop must yield.
-- Never store a `Coroutine` in a field.
+**WPILib, OpModes, Commands v3, telemetry, simulation:** see `references/2027.md` (checked against alpha-8). Read it first for any 2027 project: packages, `robotInit`, `simulateJava` and Java 25 break old code before any rule here applies.
 
 **CTRE**
 - The CAN constructors without a `CANBus` object are removed.

@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -34,9 +35,19 @@ def describe(jdk: Jdk | None) -> str:
 
 
 def wpilib_home() -> Path:
-    """The WPILib install folder: WPILIB_HOME, else the installer's default for this system."""
-    configured = env_str(WPILIB_HOME_ENV)
-    return Path(configured).expanduser() if configured else (Path("C:/Users/Public/wpilib") if os.name == "nt" else Path.home() / "wpilib")
+    """The WPILib install folder: WPILIB_HOME, else the installer's default for this system.
+
+    On Linux the 2027 installer uses `$XDG_DATA_HOME/wpilib` (`~/.local/share/wpilib` when unset); that folder is chosen when it exists, else `~/wpilib` (2026 and earlier).
+    """
+    if configured := env_str(WPILIB_HOME_ENV):
+        return Path(configured).expanduser()
+    if sys.platform == "win32":
+        return Path("C:/Users/Public/wpilib")
+    if sys.platform.startswith("linux"):
+        xdg = Path(env_str("XDG_DATA_HOME") or Path.home() / ".local" / "share").expanduser() / "wpilib"
+        if xdg.is_dir():
+            return xdg
+    return Path.home() / "wpilib"
 
 
 def read_preferences(project: Path) -> dict[str, Any]:

@@ -38,12 +38,12 @@ The plugin sets every `*_DIR` folder that holds your files (`WPILOG_DIR`, `SIM_P
 | `NT4_LOG_DIR` | `logs/` in the clone (also with `--plugin-dir`); from the marketplace, `logs/` in the folder the server starts in (Claude Code's docs do not say which) | Where capture logs are saved. Keep that folder out of git. | nt4 |
 | `WPILOG_DIR`, `WPILOG_MAX_MB` | start folder, 2048 | Folders logs are read from; largest log it opens. | wpilog |
 | `SIM_PROJECT_DIR` | start folder | Robot project folders the sim may run. | sim |
-| `SIM_TASK` | `simulateJava` | Gradle task to run; only names starting `simulate` work. | sim |
+| `SIM_TASK` | `simulateJava` (`run` for 2027) | Gradle task; only `run` and `simulate*` work. | sim |
 | `SIM_NT_PORT` | 5810 | Port the simulated robot uses. | sim |
 | `SIM_MAX_RUN_S` | 1800 | A sim is stopped after this many seconds. | sim |
 | `VSCODE_PROJECT_DIR` | start folder | Robot project folders the server may run Gradle in. | vscode |
 | `VSCODE_TIMEOUT_S` | 600 | A Gradle command is stopped after this long. | vscode |
-| `WPILIB_HOME` | `C:\Users\Public\wpilib`, else `~/wpilib` | Where WPILib is installed. | vscode, sim |
+| `WPILIB_HOME` | `C:\Users\Public\wpilib`, else `~/.local/share/wpilib` on Linux if it exists, else `~/wpilib` | Where WPILib is installed. | vscode, sim |
 | `WPILIB_JAVA_HOME` | the WPILib JDK | The Java that runs Gradle. | vscode, sim |
 | `JFR_DIR` | start folder | Folders recordings are read from and written to. | jfr |
 | `JFR_MAX_SECONDS`, `JFR_MAX_MB`, `JFR_MAX_OUTPUT_MB` | 600, 512, 200 | Longest recording; largest recording it opens; most text it reads from the JDK tools. | jfr |
@@ -133,7 +133,7 @@ The plugin's `PreToolUse` hook makes Claude Code ask a person before each call o
 
 These have no `*_ALLOW_*` switch. The confirm-first hook covers `wpilib_vendordep`, `wpilib_set_team`, `systemcore_bundle` and `jfr_live`:
 
-- `sim_start` (only `simulate*` tasks), `wpilib_run` (build, test, clean, list tasks, install tools) and `wpilib_tool` (opens a program window) run the project's own fixed Gradle commands.
+- `sim_start` (only `run` and `simulate*` tasks), `wpilib_run` (build, test, clean, list tasks, install tools) and `wpilib_tool` (opens a program window) run the project's own fixed Gradle commands.
 - `wpilib_vendordep` and `wpilib_set_team` edit your project's files (the confirm-first hook asks before each call).
 - `owlet_convert` and `passerine_convert` write a new file next to the input, never over an existing one.
 - `systemcore_bundle`, `systemcore_logs_download` and `systemcore_os_download` save files in `SYSTEMCORE_DOWNLOAD_DIR`, and CTRE downloads in `CTRE_TOOLS_DIR`. They install nothing on the robot.
