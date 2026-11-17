@@ -37,8 +37,8 @@ The first start can take a minute. All servers start on, and each one costs toke
 | Your situation | What you can ask | Skill | Servers you need |
 |---|---|---|---|
 | Writing code | Explain our code, build it, review it before competition | `wpilib-project`, `wpilib-build`, `wpilib-deploy` | `vscode` |
-| No robot | Does it start in the simulator? What is the value of this topic? Where does Java spend time? | `wpilib-live-check`, `wpilib-profile` | `sim`, `nt4`, `vscode`, `jfr` |
-| Robot on the bench | Is the controller healthy? What is on the CAN bus? | `systemcore`, `ctre-diagnose` | `nt4`, `systemcore`, `ctre-diag`, `ctre-tools` |
+| No robot | Does it start in the simulator? What is the value of this topic? Where does Java spend time? | `wpilib-live`, `wpilib-profile` | `sim`, `nt4`, `vscode`, `jfr` |
+| Robot on the bench | Is the controller healthy? What is on the CAN bus? | `systemcore`, `systemcore-live`, `ctre-diagnose` | `nt4`, `systemcore`, `ctre-diag`, `ctre-tools` |
 | After a match | What happened? Why did we brown out? | `wpilib-log-analysis` | `wpilog`, `ctre-tools`, `ctre-owlet` |
 | CTRE devices | Which tool versions fit my project? Turn a `.hoot` log or a MIDI file into something usable | `ctre-convert`, `ctre-canivore` | `ctre-tools`, `ctre-owlet`, `ctre-passerine`, `ctre-caniv` |
 

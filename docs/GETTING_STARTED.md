@@ -78,7 +78,7 @@ Plugin servers start on. Each one that is on costs tokens in every session. A se
 
 "Startup" loads at the start of every session. "Definitions" load when the assistant first uses a tool.
 
-Tokens are estimates (tiktoken) measured before the plugin was renamed `frc-toolkit` (names are now longer). With all eleven on (the default), startup is about 1,400 tokens, plus about 310 for the skills the assistant can start by itself. The per-server table, with memory and start time, is in the [benchmarks](../evaluations/README.md#benchmarks). A test fails if a server grows more than 5%.
+Tokens are estimates (tiktoken) measured before the plugin was renamed `frc-toolkit` (names are now longer). With all eleven on (the default), startup is about 1,400 tokens, plus about 350 for the skills the assistant can start by itself. The per-server table, with memory and start time, is in the [benchmarks](../evaluations/README.md#benchmarks). A test fails if a server grows more than 5%.
 
 **Smaller tool lists.** The `core` toolset hides the rarely used tools. It helps most in assistants with no tool search, which load every definition at the start. Set the server's toolset setting to `core` (for example `NT4_TOOLSET=core`; names in [SETTINGS](SETTINGS.md)). The three small CTRE servers have no `core` set. If `ENABLE_TOOL_SEARCH=false` is set, a server uses `core` on its own. See [SETTINGS](SETTINGS.md).
 

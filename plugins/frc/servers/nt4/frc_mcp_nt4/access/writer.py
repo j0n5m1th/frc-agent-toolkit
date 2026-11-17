@@ -39,10 +39,10 @@ class PublishContext:
     immutable: bool
 
 
-def _check_writable(name: str) -> None:
+def _check_writable(name: str, port: int | None) -> None:
     """`config.check_writable`, with each refusal logged so denied attempts leave a record."""
     try:
-        config.check_writable(name)
+        config.check_writable(name, port)
     except NT4Error as err:
         _log.warning("refused write to %s: %s", name, err)
         raise
@@ -54,17 +54,17 @@ def _value_size(value: Any) -> str:
 
 
 def set_value(inst: ntcore.NetworkTableInstance, publishers: PublisherRegistry, name: str, value: Any,
-              type_str: str | None, opts: PublishOptions) -> SetResult:
+              type_str: str | None, opts: PublishOptions, port: int | None = None) -> SetResult:
     """Publish `value` and/or change topic properties.
 
     `opts` (`PublishOptions`): default=True is NT4's "set default", a weak write (timestamp 0) that never overrides a value
     set by anyone else. properties: merged in; null deletes a key. publisher_ttl_s: release the publisher after that long.
     timestamp_us: server-clock sample time.
 
-    Raises NT4Error: writes disabled or `name` outside NT4_WRITE_PREFIXES; a bad option or unsynchronized clock; nothing to
+    Raises NT4Error: writes disabled (always on the controller `port`, 6810) or `name` outside NT4_WRITE_PREFIXES; a bad option or unsynchronized clock; nothing to
     publish, or properties for a missing topic; `type_str` missing or different from the topic's; unconvertible value.
     """
-    _check_writable(name)
+    _check_writable(name, port)
     check_ttl(opts.publisher_ttl_s, value)
     props = normalize_properties(opts.properties)
     local_time_us = local_sample_time(opts.timestamp_us, value, opts.default,
@@ -89,12 +89,12 @@ def set_value(inst: ntcore.NetworkTableInstance, publishers: PublisherRegistry, 
     return result
 
 
-def unpublish(inst: ntcore.NetworkTableInstance, publishers: PublisherRegistry, name: str) -> bool:
+def unpublish(inst: ntcore.NetworkTableInstance, publishers: PublisherRegistry, name: str, port: int | None = None) -> bool:
     """Release our publisher for `name`; True if we held one.
 
     Raises NT4Error: when writes are disabled or `name` is outside NT4_WRITE_PREFIXES.
     """
-    _check_writable(name)
+    _check_writable(name, port)
     released = _release(inst, publishers, name)
     _log.info("write topic=%s unpublish released=%s", name, released)
     return released

@@ -319,3 +319,49 @@ def test_set_value_ttl_arms_and_releases(monkeypatch):
 def test_publish_options_rejects_unknown_keyword():
     with pytest.raises(TypeError):
         PublishOptions(bogus=1)  # type: ignore[call-arg]
+
+
+def test_the_controllers_private_server_is_never_written_even_with_writes_on(monkeypatch):
+    monkeypatch.setenv("NT4_ALLOW_WRITES", "1")
+    monkeypatch.setenv("NT4_WRITE_PREFIXES", "/Netcomm,/T")
+    s = _session(_Topic())
+    s.port = 6810
+    with pytest.raises(WPILibMCPError, match="read-only here"):
+        s.set_value("/Netcomm/Alerts/x", 1, "int")
+    with pytest.raises(WPILibMCPError, match="read-only here"):
+        s.unpublish("/Netcomm/Alerts/x")
+    s.port = 5810
+    s.set_value("/T/x", 1.0, "double")  # the usual port still writes
+
+
+def test_status_says_writes_are_off_on_the_controllers_port_and_the_tool_refuses(monkeypatch):
+    from fastmcp.exceptions import ToolError
+
+    from frc_mcp_nt4.tools import write_tools
+
+    monkeypatch.setenv("NT4_ALLOW_WRITES", "1")
+    monkeypatch.setenv("NT4_WRITE_PREFIXES", "/Netcomm,/T")
+    s = _session(_Topic())
+    s._inst.isConnected = lambda: False  # type: ignore[attr-defined]
+    s.port = 5810
+    assert s.status()["writes_allowed"] is True
+    s.port = 6810  # a reconnect to the other port changes the answer at once
+    status = s.status()
+    assert status["writes_allowed"] is False and "6810" in status["write_reason"]
+    monkeypatch.setattr(write_tools, "session", s)
+    s._inst.isConnected = lambda: True  # type: ignore[attr-defined]
+    with pytest.raises(ToolError, match="read-only here"):
+        asyncio.run(write_tools.nt4_set_value("/Netcomm/Alerts/x", 1, "int"))
+
+
+def test_status_before_any_connection_uses_the_configured_default_port(monkeypatch):
+    monkeypatch.setenv("NT4_ALLOW_WRITES", "1")
+    monkeypatch.setenv("NT4_WRITE_PREFIXES", "/T")
+    s = _session(_Topic())
+    s._inst = None  # no connection yet: a lazy connect would use NT4_PORT, not the session's stale default
+    s.port = 5810
+    monkeypatch.setenv("NT4_PORT", "6810")
+    assert s.status()["writes_allowed"] is False
+    monkeypatch.setenv("NT4_PORT", "5810")
+    s.port = 6810  # stale value left by an earlier connection
+    assert s.status()["writes_allowed"] is True

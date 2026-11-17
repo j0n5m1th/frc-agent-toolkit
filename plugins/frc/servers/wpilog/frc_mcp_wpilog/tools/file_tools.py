@@ -1,12 +1,12 @@
 """File tools: wpilog_list (which logs exist), wpilog_open (read one's index), wpilog_sync (several on one clock) and wpilog_close."""
 
 import asyncio
-from datetime import datetime
 from typing import Annotated, Literal
 
 from fastmcp.tools import ToolResult
 from pydantic import Field
 
+from frc_mcp_core.folders import file_row
 from frc_mcp_core.reply import reply
 
 from .. import config, store, sync
@@ -32,12 +32,7 @@ async def wpilog_list(
     """Match logs (.wpilog and Driver Station .dslog) this server may read, newest first (name, size, date). Open one with wpilog_open."""
     found = await asyncio.to_thread(config.find_logs, None, name_contains)
     roots = config.log_roots()
-    rows = []
-    for path in found[:limit]:
-        info = path.stat()
-        shown = next((str(path.relative_to(root)) for root in roots if path.is_relative_to(root)), str(path))
-        rows.append({"file": shown, "mb": round(info.st_size / 2**20, 1),
-                     "modified": datetime.fromtimestamp(info.st_mtime).strftime("%Y-%m-%d %H:%M")})
+    rows = [file_row(path, roots) for path in found[:limit]]
     out: dict[str, object] = {"total": len(found), "logs": rows}
     if len(found) > limit:
         out["omitted"] = len(found) - limit

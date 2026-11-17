@@ -176,8 +176,9 @@ async def detail(host: str, area: str) -> dict[str, Any]:
     errors: dict[str, str] = {}
     out: dict[str, Any] = {"host": host, "area": area}
     if area == "network":
-        addresses = await _try("addresses", net.request_json(host, "hwmon", "/api/network/addresses"), errors)
-        config_ = await _try("network", net.request_json(host, "diag", "/api/network"), errors)
+        addresses, config_ = await asyncio.gather(  # different services, so they can run together
+            _try("addresses", net.request_json(host, "hwmon", "/api/network/addresses"), errors),
+            _try("network", net.request_json(host, "diag", "/api/network"), errors))
         out["hostname"] = (addresses or {}).get("hostname")
         out["interfaces"] = [{"name": a["ifn"], "ip": a["ip"], "up": a["up"]} for a in (addresses or {}).get("addresses", [])]
         # Settings only: the Wi-Fi access point's passphrase lives in /api/wifi, which is never read.

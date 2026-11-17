@@ -22,6 +22,7 @@ def default_host() -> str | None:
 
 
 SECURE_PORT = 5811  # NT4's wss port; ntcore (and so this server) only speaks plain ws
+CONTROLLER_PORT = 6810  # the Systemcore's private NT4 server (alerts, /sys, /canbus): read-only here, whatever the write settings say
 MAX_IDENTITY = 64
 MAX_PORT = 65535
 MAX_IDLE_S = 86400  # one day: the largest idle timeout worth waiting for
@@ -103,11 +104,13 @@ def writes_possible() -> bool:
     return opted_in and has_prefixes and not only_read
 
 
-def write_restriction(prefixes: list[str] | None = None) -> str | None:
+def write_restriction(prefixes: list[str] | None = None, port: int | None = None) -> str | None:
     """Why writes are disabled (None if enabled), for status reports. Raises NT4Error for an invalid safety setting.
 
     `prefixes` may carry an already-parsed `write_prefixes()` result, so a caller that also matches a topic against it
     (see `check_writable`) reads the environment once instead of twice."""
+    if port == CONTROLLER_PORT:  # first: the settings below cannot lift it, so do not send the user to them
+        return f"Port {CONTROLLER_PORT} is the controller's own server: read-only here, whatever the write settings say. Use port 5810 for the robot program's topics."
     # All three settings are read before anything is decided, so a malformed one is reported even when an earlier one
     # already refuses (the way the two flags and the prefix list are validated together).
     only_read = read_only.enabled()
@@ -123,10 +126,10 @@ def write_restriction(prefixes: list[str] | None = None) -> str | None:
     return None
 
 
-def check_writable(topic: str) -> None:
+def check_writable(topic: str, port: int | None = None) -> None:
     """Raise NT4Error, saying why and how to change it, unless writing `topic` is allowed."""
     prefixes = write_prefixes()  # the environment read once for the whole check
-    if restriction := write_restriction(prefixes):
+    if restriction := write_restriction(prefixes, port):
         raise NT4Error(restriction)
     if not any(topic == p or topic.startswith(p + "/") for p in prefixes):
         raise NT4Error(f"Topic {topic!r} is outside the writable prefixes {prefixes} (NT4_WRITE_PREFIXES).")

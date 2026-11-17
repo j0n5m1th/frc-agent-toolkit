@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from frc_mcp_wpilib.gradle.jdk import read_preferences
+
 from .errors import CtreError
 
 _log = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ def read_project(folder: Path) -> ProjectFacts:
     if not any((folder / name).exists() for name in ("build.gradle", "vendordeps", ".wpilib")):
         raise CtreError(f"{folder} does not look like a WPILib robot project (no build.gradle, vendordeps or .wpilib). Open Claude Code in the project folder (from a clone, set CTRE_PROJECT_DIR).")
     notes: list[str] = []
-    prefs = _json(folder / ".wpilib" / "wpilib_preferences.json")
+    prefs = read_preferences(folder)
     year = str(prefs["projectYear"]) if prefs.get("projectYear") else None
     team = prefs["teamNumber"] if isinstance(prefs.get("teamNumber"), int) else None
     gradlerio = None

@@ -100,7 +100,7 @@ def _vendordep_files(folder: Path) -> dict[str, dict[str, Any]]:
 def offline_source(project: Path, prefs: dict[str, Any] | None = None) -> Path:
     """The WPILib install's vendordeps folder for this project's year (projectYear in the preferences)."""
     year = (prefs if prefs is not None else preferences(project)).get("projectYear")
-    return jdk.wpilib_home() / str(year or "") / "vendordeps"
+    return jdk.wpilib_home(str(year) if year else None) / str(year or "") / "vendordeps"
 
 
 def info(project: Path) -> dict[str, Any]:

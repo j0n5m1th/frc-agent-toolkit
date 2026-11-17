@@ -6,7 +6,7 @@ A few regular expressions in one place, so project detection and `wpilib_info` c
 import re
 from typing import Any
 
-_GRADLERIO_RE = re.compile(r"""GradleRIO["']?\s+version\s+["']([^"']+)["']""")
+_GRADLERIO_RE = re.compile(r"""GradleRIO["']?\)?\s+version\s+["']([^"']+)["']""")  # Groovy `id "...GradleRIO" version "x"` and Kotlin `id("...GradleRIO") version "x"`
 _JAVA_RE = re.compile(r"JavaVersion\.VERSION_(\d+)")
 _TARGET_RE = re.compile(r"^\s+(\w+)\(getTargetTypeClass\(", re.M)
 

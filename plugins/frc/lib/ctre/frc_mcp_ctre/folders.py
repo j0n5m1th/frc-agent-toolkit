@@ -7,11 +7,16 @@ folders. Outputs follow `new_output_path`: beside their input, never over a file
 import asyncio
 import logging
 from collections.abc import Callable
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from frc_mcp_core.folders import AllowedFolders, check_size, newest_first, walk_folders
+from frc_mcp_core.folders import (
+    AllowedFolders,
+    check_size,
+    file_row,
+    newest_first,
+    walk_folders,
+)
 from frc_mcp_core.settings import env_megabytes
 
 from .errors import CtreError
@@ -119,10 +124,9 @@ class Folders:
         roots = self.roots()
         rows = []
         for path in found[:limit]:
-            info = path.stat()
-            shown = next((str(path.relative_to(root)) for root in roots if path.is_relative_to(root)), str(path))
+            row = file_row(path, roots)
             more = extra(path) if extra is not None else {}
-            rows.append([shown, round(info.st_size / 2**20, 1), datetime.fromtimestamp(info.st_mtime).strftime("%Y-%m-%d %H:%M"), *(more.get(col) for col in extra_cols)])
+            rows.append([row["file"], row["mb"], row["modified"], *(more.get(col) for col in extra_cols)])
         out: dict[str, Any] = {"total": len(found), "cols": ["file", "mb", "modified", *extra_cols], "rows": rows}
         if len(found) > limit:
             out["omitted"] = len(found) - limit

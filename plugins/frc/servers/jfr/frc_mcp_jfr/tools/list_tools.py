@@ -1,11 +1,12 @@
 """jfr_list: the recordings this server may read, or the JVMs it could record."""
 
 import asyncio
-from datetime import datetime
 from typing import Annotated, Literal
 
 from fastmcp.tools import ToolResult
 from pydantic import Field
+
+from frc_mcp_core.folders import file_row
 
 from .. import config, jdk, recorder
 from ..app import LOCAL_ONLY, Limit, mcp, tool_errors
@@ -31,11 +32,7 @@ async def jfr_list(
     still_recording = {r["file"] for r in in_progress}
     found = [p for p in await asyncio.to_thread(config.find_recordings, name_contains) if p.name not in still_recording]
     roots = config.roots()
-    rows = []
-    for path in found[:limit]:
-        info = path.stat()
-        shown = next((str(path.relative_to(root)) for root in roots if path.is_relative_to(root)), str(path))
-        rows.append({"file": shown, "mb": round(info.st_size / 2**20, 1), "modified": datetime.fromtimestamp(info.st_mtime).strftime("%Y-%m-%d %H:%M")})
+    rows = [file_row(path, roots) for path in found[:limit]]
     out = {"total": len(found), "recordings": [*in_progress, *rows]}
     if len(found) > limit:
         out["omitted"] = len(found) - limit

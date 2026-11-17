@@ -88,7 +88,7 @@ def skill_text(name: str) -> str:
 
 
 def test_live_check_says_nt4_writes_need_the_users_own_server_entry():
-    text = skill_text("wpilib-live-check")
+    text = skill_text("wpilib-live")
     assert "NT4_ALLOW_WRITES" in text and "NT4_WRITE_PREFIXES" in text and "own server entry" in text
     assert 'turn off "NetworkTables read-only"' not in text  # that alone never enabled writes
     assert re.search(r"`log=true` on `nt4_capture_start`", text) and "`nt4_capture_query` (`log=true`" not in text
@@ -115,6 +115,6 @@ def needs_line(name: str) -> str:
 
 
 def test_no_skill_asks_for_a_server_it_does_not_use():
-    assert "`sim` only" in needs_line("wpilib-live-check")  # a real robot needs no simulator
+    assert "`sim` only" in needs_line("wpilib-live")  # a real robot needs no simulator
     assert "`sim` only" in needs_line("wpilib-profile")  # any JVM needs no simulator
     assert "MIDI" in needs_line("ctre-convert")  # hoot and MIDI need different servers

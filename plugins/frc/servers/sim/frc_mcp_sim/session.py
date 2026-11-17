@@ -1,8 +1,10 @@
 """The one simulation this server runs at a time, and the checks around starting and stopping it."""
 
 import asyncio
+from pathlib import Path
 from typing import Any
 
+from frc_mcp_wpilib.errors import WPILibMCPError
 from frc_mcp_wpilib.gradle import jdk
 from frc_mcp_wpilib.gradle.project import gradlew
 
@@ -46,7 +48,7 @@ class Session:
             wrapper = gradlew(folder)
             if wrapper is None:  # explicit so `python -O` keeps the message
                 raise SimError(f"{folder} has no Gradle wrapper; give a project folder with gradlew.")
-            chosen = config.check_task(task) if task else config.default_task()
+            chosen = config.check_task_for(task, folder) if task else config.default_task(folder)
             args = config.source.props_to_args(props)
             cap = config.max_run_s()
             if run_s is not None and run_s > cap:
@@ -66,14 +68,23 @@ class Session:
                 await run.stop()
         return run
 
+    @staticmethod
+    async def _known_project() -> Path | None:
+        """The one project a `sim_start` with no `project` would use, or None when there is none or several."""
+        try:
+            return await config.source.resolve_async()
+        except WPILibMCPError:
+            return None
+
     async def status(self) -> dict[str, Any]:
         async with self._lock:  # one read of the slot, so the reply describes one run
             run = self.run
         port = config.nt_port()
+        project = run.project if run else await self._known_project()
         port_is_open = await port_open(port)
         # The effective settings from config.py, on every branch: what `sim_start` would use, the way nt4_status and
         # wpilib_info report their own. `task` below stays the one the current run actually ran.
-        settings = {"nt_port": port, "max_run_s": config.max_run_s(), "default_task": config.default_task()}
+        settings = {"nt_port": port, "max_run_s": config.max_run_s(), "default_task": config.status_default_task(project)}
         if run is None:
             return {"state": "idle", "nt_port_open": port_is_open, **settings}
         out: dict[str, Any] = {

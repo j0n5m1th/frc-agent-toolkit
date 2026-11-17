@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -33,10 +34,22 @@ def describe(jdk: Jdk | None) -> str:
     return str(jdk) if jdk else FALLBACK
 
 
-def wpilib_home() -> Path:
-    """The WPILib install folder: WPILIB_HOME, else the installer's default for this system."""
-    configured = env_str(WPILIB_HOME_ENV)
-    return Path(configured).expanduser() if configured else (Path("C:/Users/Public/wpilib") if os.name == "nt" else Path.home() / "wpilib")
+def wpilib_home(year: str | None = None) -> Path:
+    """The WPILib install folder: WPILIB_HOME, else the installer's default for this system.
+
+    On Linux the 2027 installer uses `$XDG_DATA_HOME/wpilib` (`~/.local/share/wpilib` when unset) and 2026 and earlier use `~/wpilib`, and both can exist.
+    With `year`, the first default folder that has that year's install is chosen (an explicit WPILIB_HOME always wins); with no year, or when none has it, the first default.
+    """
+    if configured := env_str(WPILIB_HOME_ENV):
+        return Path(configured).expanduser()
+    if sys.platform == "win32":
+        roots = [Path("C:/Users/Public/wpilib")]
+    else:
+        roots = [Path.home() / "wpilib"]
+        if sys.platform.startswith("linux"):
+            xdg = Path(env_str("XDG_DATA_HOME") or Path.home() / ".local" / "share").expanduser() / "wpilib"
+            roots = [xdg, *roots] if xdg.is_dir() else roots
+    return next((root for root in roots if year and (root / year).is_dir()), roots[0])
 
 
 def read_preferences(project: Path) -> dict[str, Any]:
@@ -66,6 +79,6 @@ def select(project: Path, error: type[WPILibMCPError], prefs: dict[str, Any] | N
             raise error(f"{JAVA_HOME_ENV} is {configured!r}, which has no bin/{_JAVA}. Point it at a JDK folder, or unset it.")
         return Jdk(home, JAVA_HOME_ENV)
     year = (prefs if prefs is not None else read_preferences(project)).get("projectYear")
-    if year and _has_java(home := wpilib_home() / str(year) / "jdk"):
+    if year and _has_java(home := wpilib_home(str(year)) / str(year) / "jdk"):
         return Jdk(home, "WPILib install")
     return None

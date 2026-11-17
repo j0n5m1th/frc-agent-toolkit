@@ -8,7 +8,7 @@ Ask an assistant about the **Systemcore**, the FRC robot controller: find it on 
 | Get a support bundle for Ghost CSA | this server |
 | Download a match log, then read it | this server, then the [log server](WPILOG.md) |
 | See CAN devices and their faults | the CTRE diagnostic reader ([CTRE](CTRE.md#phoenix-diagnostic-server-reader-ctre-diag)) |
-| Read robot values live | the [live server](NT4.md) (faults, CAN down counts and brownout are under `/sys` on the controller's hub, port 6810: **seen** on image alpha14) |
+| Read robot values live | the [live server](NT4.md) (faults, CAN down counts and brownout are under `/sys` on the controller's hub, port 6810: **seen** on image alpha14; the `systemcore-live` skill reads it, read-only) |
 | Build and deploy robot code | the [commands server](VSCODE.md) |
 
 > Labels: **seen** means we saw it on a real Systemcore. **documented** means a vendor document says so.
