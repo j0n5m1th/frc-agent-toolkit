@@ -118,3 +118,20 @@ def test_simulate_java_is_refused_on_a_2027_project(tmp_path, monkeypatch):
         config.default_task(tmp_path)
     (tmp_path / "build.gradle").write_text('plugins { id "edu.wpi.first.GradleRIO" version "2026.2.1" }\n', encoding="utf-8")
     assert config.check_task_for("simulateJava", tmp_path) == "simulateJava"
+
+
+def test_a_kotlin_build_file_is_recognised_as_2027(tmp_path, monkeypatch):
+    monkeypatch.delenv("SIM_TASK", raising=False)
+    (tmp_path / "build.gradle.kts").write_text('plugins { id("org.wpilib.GradleRIO") version "2027.0.0-alpha-8" }\n', encoding="utf-8")
+    assert config.default_task(tmp_path) == "run"
+    with pytest.raises(SimError, match="removed the simulateJava task"):
+        config.check_task_for("simulateJava", tmp_path)
+
+
+def test_the_status_default_never_raises_and_does_not_guess_without_a_project(tmp_path, monkeypatch):
+    monkeypatch.delenv("SIM_TASK", raising=False)
+    assert "2027" in config.status_default_task(None) and "simulateJava" in config.status_default_task(None)
+    (tmp_path / "build.gradle").write_text('plugins { id "org.wpilib.GradleRIO" version "2027.0.0-alpha-8" }\n', encoding="utf-8")
+    assert config.status_default_task(tmp_path) == "run"
+    monkeypatch.setenv("SIM_TASK", "simulateJava")  # refused for a 2027 project: report it, do not raise
+    assert "refused for this project" in config.status_default_task(tmp_path)

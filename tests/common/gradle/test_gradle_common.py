@@ -189,3 +189,19 @@ async def test_a_run_is_tracked_for_server_death_unless_it_outlives_the_server(t
     finally:
         await ordinary.stop()
         await window.stop()
+
+
+def test_a_linux_machine_with_both_installs_picks_the_folder_that_has_the_projects_year(tmp_path, monkeypatch):
+    monkeypatch.delenv("WPILIB_HOME", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
+    monkeypatch.setattr("sys.platform", "linux")
+    (tmp_path / "data" / "wpilib" / "2027_alpha8").mkdir(parents=True)
+    (tmp_path / "home" / "wpilib" / "2026").mkdir(parents=True)
+    assert wpilib_home("2026") == tmp_path / "home" / "wpilib"  # the older install is not hidden by the newer folder
+    assert wpilib_home("2027_alpha8") == tmp_path / "data" / "wpilib"
+    assert wpilib_home("2099") == tmp_path / "data" / "wpilib"  # no folder has it: the first default
+    assert wpilib_home() == tmp_path / "data" / "wpilib"
+    monkeypatch.setenv("WPILIB_HOME", str(tmp_path / "chosen"))
+    assert wpilib_home("2026") == tmp_path / "chosen"  # an explicit choice always wins

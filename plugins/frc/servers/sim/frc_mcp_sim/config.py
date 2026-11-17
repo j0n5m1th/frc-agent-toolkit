@@ -47,6 +47,16 @@ def default_task(project: Path | None = None) -> str:
     return "simulateJava"
 
 
+def status_default_task(project: Path | None) -> str:
+    """The default for `sim_status`: it never raises, and says so when the answer depends on a project that is not known yet."""
+    if project is None and not env_str("SIM_TASK"):
+        return "run (GradleRIO 2027) or simulateJava (earlier)"
+    try:
+        return default_task(project)
+    except SimError:
+        return f"{env_str('SIM_TASK')} (refused for this project)"
+
+
 def nt_port() -> int:
     return env_int("SIM_NT_PORT", 5810, 1, 65535, SimError)
 

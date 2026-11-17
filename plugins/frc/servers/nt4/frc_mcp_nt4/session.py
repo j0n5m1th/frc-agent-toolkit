@@ -249,7 +249,8 @@ class NT4Session:
 
     def status(self) -> dict[str, Any]:
         try:
-            restriction = config.write_restriction(port=self.port)
+            # before the first connect `self.port` is a stale default: a lazy connect uses NT4_PORT, so report that one
+            restriction = config.write_restriction(port=self.port if self._inst is not None else config.default_port())
         except NT4Error as e:
             restriction = str(e)
         # One boolean from the write gate, named like the commands server's `deploy_allowed`, plus the sentence that

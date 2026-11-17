@@ -352,3 +352,16 @@ def test_status_says_writes_are_off_on_the_controllers_port_and_the_tool_refuses
     s._inst.isConnected = lambda: True  # type: ignore[attr-defined]
     with pytest.raises(ToolError, match="read-only here"):
         asyncio.run(write_tools.nt4_set_value("/Netcomm/Alerts/x", 1, "int"))
+
+
+def test_status_before_any_connection_uses_the_configured_default_port(monkeypatch):
+    monkeypatch.setenv("NT4_ALLOW_WRITES", "1")
+    monkeypatch.setenv("NT4_WRITE_PREFIXES", "/T")
+    s = _session(_Topic())
+    s._inst = None  # no connection yet: a lazy connect would use NT4_PORT, not the session's stale default
+    s.port = 5810
+    monkeypatch.setenv("NT4_PORT", "6810")
+    assert s.status()["writes_allowed"] is False
+    monkeypatch.setenv("NT4_PORT", "5810")
+    s.port = 6810  # stale value left by an earlier connection
+    assert s.status()["writes_allowed"] is True
