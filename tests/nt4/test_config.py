@@ -31,3 +31,13 @@ def test_log_limit_error_names_the_limit(monkeypatch, tmp_path):
         (tmp_path / f"nt4-capture-{i}.wpilog").write_bytes(b"")
     with pytest.raises(NT4Error, match="limit"):
         new_log_path("c9")
+
+
+def test_the_controllers_port_is_never_writable_and_the_reason_names_no_setting(monkeypatch):
+    monkeypatch.setenv("NT4_ALLOW_WRITES", "1")
+    monkeypatch.setenv("NT4_WRITE_PREFIXES", "/Netcomm")
+    assert config.write_restriction(port=5810) is None
+    assert "controller's own server" in config.write_restriction(port=6810)
+    with pytest.raises(NT4Error, match="read-only here"):
+        config.check_writable("/Netcomm/Alerts/x", 6810)
+    config.check_writable("/Netcomm/x", 5810)

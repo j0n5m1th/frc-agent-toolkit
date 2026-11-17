@@ -5,8 +5,8 @@ Read this at step 3 of the skill. Every server costs tokens in each session, so 
 | Server | What it gives | Skill that uses it |
 |---|---|---|
 | `vscode` | Project info, builds, Gradle tools | wpilib-project, wpilib-build; `/frc-toolkit:wpilib-deploy` is the user's to run |
-| `sim` | Runs the robot simulator | wpilib-live-check |
-| `nt4` | Live NetworkTables values | wpilib-live-check |
+| `sim` | Runs the robot simulator | wpilib-live |
+| `nt4` | Live NetworkTables values, and a real Systemcore's own health and alerts (port 6810, read-only) | wpilib-live (the robot program), systemcore-live (the controller) |
 | `jfr` | Java Flight Recorder profiling | wpilib-profile |
 | `wpilog` | Match log files | wpilib-log-analysis |
 | `systemcore` | The robot controller: health, logs, restart | systemcore; the user runs `/frc-toolkit:systemcore-restart` or `/frc-toolkit:systemcore-provision` |

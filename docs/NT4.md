@@ -104,6 +104,7 @@ Writing can move a real robot, so the server only reads until you turn it on, an
 - `nt4_set_value` with `default=true` only sets a value nobody else has set. The result says whether yours stuck (`default_applied`).
 - `publisher_ttl_s` (up to 3600) releases this server's publisher after a while. It is best effort, not a safety interlock. `read_back=true` shows this client's own view, which is not proof the robot acted.
 - The server holds a publisher until you release it or disconnect. Persistent topics can outlive the publisher.
+- **Port 6810 is never written.** It is the Systemcore's own internal server (health, CAN, alerts). The server refuses `nt4_set_value` and `nt4_release_publisher` there, whatever the write settings say, and `nt4_status` shows `writes_allowed: false`. Use port 5810 for the robot program's topics.
 
 ## Smaller tool lists
 

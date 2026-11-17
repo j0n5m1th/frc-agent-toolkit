@@ -249,7 +249,7 @@ class NT4Session:
 
     def status(self) -> dict[str, Any]:
         try:
-            restriction = config.write_restriction()
+            restriction = config.write_restriction(port=self.port)
         except NT4Error as e:
             restriction = str(e)
         # One boolean from the write gate, named like the commands server's `deploy_allowed`, plus the sentence that
@@ -330,7 +330,7 @@ class NT4Session:
     def set_value(self, name: str, value: Any, type_str: str | None,
                   options: PublishOptions | None = None) -> SetResult:
         """Publish `value` and/or change topic properties (option semantics: `writer.set_value`); raises NT4Error."""
-        return writer.set_value(self.inst, self._publishers, name, value, type_str, options or PublishOptions())
+        return writer.set_value(self.inst, self._publishers, name, value, type_str, options or PublishOptions(), self.port)
 
     def clock_synchronized(self) -> bool:
         """True once the NT4 clocks have synchronized, so server-time ages are meaningful."""
@@ -345,7 +345,7 @@ class NT4Session:
 
     def unpublish(self, name: str) -> bool:
         """Release our publisher for `name`; True if we held one (raises NT4Error). A retained or persistent topic stays listable."""
-        return writer.unpublish(self.inst, self._publishers, name)
+        return writer.unpublish(self.inst, self._publishers, name, self.port)
 
     # -- captures -----------------------------------------------------------
     def capture_start(self, spec: CaptureSpec, *, log: bool) -> Capture:

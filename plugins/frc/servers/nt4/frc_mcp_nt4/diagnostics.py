@@ -15,7 +15,7 @@ def _check_configuration(host: str | None, port: int | None) -> tuple[str, int, 
     effective_port = config.checked_port(port) if port is not None else config.default_port()
     config.idle_seconds()  # validate only
     try:
-        restriction = config.write_restriction()
+        restriction = config.write_restriction(port=effective_port)
     except NT4Error as e:
         raise NT4Error(f"Invalid write safety configuration: {e}") from e
     return host, effective_port, restriction
