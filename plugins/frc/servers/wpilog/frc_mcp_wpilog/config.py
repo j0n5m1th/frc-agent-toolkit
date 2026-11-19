@@ -113,16 +113,18 @@ def resolve_log(name: str) -> Path:
 
     located = FOLDERS.locate(name, lambda: (p for p in find_logs(roots) if same(p)), roots=roots)
     matches, outside = located.inside, located.outside
-    elsewhere = bool(outside) and OUTSIDE.enabled()  # a log outside the folders, allowed by the setting (the plugin has asked first)
-    if elsewhere:
-        matches, outside = matches + outside, []
+    direct = (given if given.is_absolute() else roots[0] / given).resolve()  # the one path the plugin's hook judged before asking
+    allowed = [p for p in outside if p == direct] if OUTSIDE.enabled() else []  # a log found elsewhere by searching, or through a link, was never asked about
+    matches, outside = matches + allowed, [p for p in outside if p not in allowed]
     if dslog.is_ds(given):  # either file of a session opens the session; its other file is judged too (it may be a link out)
         canonical = [dslog.canonical(m).resolve() for m in matches]
         # every file the session reads (the .dslog AND the .dsevents) must resolve inside the folders, or (with the setting) beside the named one:
         # a link out of the folder is never followed, so a planted .dsevents cannot lead somewhere the person was not asked about
         def together(c: Path) -> bool:
             files = [f.resolve() for f in dslog.pair(c) if f is not None]
-            return all(inside(f, roots) for f in files) or (OUTSIDE.enabled() and all(f.parent == c.parent for f in files))
+            if all(inside(f, roots) for f in files):
+                return True
+            return OUTSIDE.enabled() and c.parent == direct.parent and all(f.parent == c.parent for f in files)  # beside the file the person was asked about
 
         safe = [c for c in canonical if together(c)]
         matches, outside = safe, outside + [c for c in canonical if c not in safe]

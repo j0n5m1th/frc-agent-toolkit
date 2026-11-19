@@ -21,6 +21,7 @@ async def test_health_reads_the_controller_topics_and_the_text_of_active_alerts(
     await wait_for_client_sync(nt_server)
     out = j(await client.call_tool("nt4_health", {}))
     assert out["controller"]["battery_v"] == 6.2 and out["controller"]["robot_code"] == {"running": True}
+    assert "topics_not_read" not in out and not any("not read" in f for f in out["flags"])  # far below the cap: nothing was left out
     assert out["alerts"] == [{"level": "high", "text": "Arm encoder lost"}]
     assert any("battery reads 6.2 V" in f for f in out["flags"])
     assert "never shown" not in str(out)

@@ -54,6 +54,8 @@ def _numbers(rows: TopicRows, topic: Topic) -> list[LogRow]:
 
 def _held_s(rows: Sequence[LogRow], end_us: int, *tests: Callable[[Any], bool]) -> list[float]:
     """For each test, the seconds the held value passed it (each update holds until the next, the last until the log ends)."""
+    if not rows:
+        return [0.0 for _ in tests]
     ends = [r[0] for r in rows[1:]]
     ends.append(end_us)
     return [sum(max(0, nxt - t) for (t, v), nxt in zip(rows, ends, strict=True) if test(v)) / US_PER_S for test in tests]

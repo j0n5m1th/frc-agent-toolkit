@@ -134,3 +134,26 @@ async def test_a_session_whose_other_file_is_in_another_folder_is_refused(log_di
     monkeypatch.setattr(config.dslog, "pair", lambda c: (c, usb / "other.dsevents"))
     with pytest.raises(ToolError, match="outside"):
         await file_tools.wpilog_open("match.dslog")
+
+
+async def test_a_bare_name_found_by_searching_is_never_read_elsewhere(log_dir, usb, monkeypatch):
+    """The plugin's hook judges the path as given; a log the server finds by searching (or through a link) was never asked about."""
+    from frc_mcp_wpilog import config
+
+    monkeypatch.setenv("WPILOG_ALLOW_OUTSIDE", "1")
+    monkeypatch.setattr(config, "find_logs", lambda roots=None, name_contains=None: [usb / "match.wpilog"])
+    with pytest.raises(ToolError, match="outside"):
+        await file_tools.wpilog_open("match.wpilog")
+
+
+async def test_a_session_named_inside_cannot_lead_to_a_file_elsewhere(log_dir, usb, monkeypatch):
+    from dslog_builder import build_session
+
+    from frc_mcp_wpilog import config
+
+    monkeypatch.setenv("WPILOG_ALLOW_OUTSIDE", "1")
+    build_session(log_dir, "match")
+    build_session(usb, "other")
+    monkeypatch.setattr(config.dslog, "canonical", lambda path: usb / "other.dslog")  # the inside name canonicalizes to a file elsewhere
+    with pytest.raises(ToolError, match="outside"):
+        await file_tools.wpilog_open("match.dsevents")

@@ -142,8 +142,8 @@ def when(
         return _with_samples(log, empty, [], sample, origin)  # still checks the names
     end_ms = log_end_ms if window.until_ms is None else min(window.until_ms, log_end_ms)  # a value holds only as long as the log
     if op == "changed":
-        changed = _changes(_window_rows(log, name, window, origin), max_intervals)
-        return _with_samples(log, changed, changed["changes_ms"], sample, origin)
+        changed, raw_times = _changes(_window_rows(log, name, window, origin), max_intervals)
+        return _with_samples(log, changed, raw_times, sample, origin)
     per_condition = [
         _intervals(_window_rows(log, c.topic, window, origin), log.topics[c.topic], c.op, c.value, c.field, end_ms)
         for c in clauses
@@ -164,12 +164,13 @@ def when(
     return _with_samples(log, out, [s for s, _ in shown], sample, origin)
 
 
-def _changes(rows: list[tuple[float, Any]], limit: int) -> dict[str, Any]:
+def _changes(rows: list[tuple[float, Any]], limit: int) -> tuple[dict[str, Any], list[float]]:
+    """The reply, and the unrounded change times it lists (`sample` looks values up at those, not at the rounded ones)."""
     times = [t for (_, a), (t, b) in zip(rows, rows[1:], strict=False) if not values_equal(a, b)]
     out: dict[str, Any] = {"n": len(times), "changes_ms": [round(t, 1) for t in times[:limit]]}
     if len(times) > limit:
         out["omitted"] = len(times) - limit
-    return out
+    return out, times[:limit]
 
 
 def _with_samples(log: LogLike, out: dict[str, Any], times_ms: list[float], sample: Sequence[str], origin: int) -> dict[str, Any]:

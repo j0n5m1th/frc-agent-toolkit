@@ -29,7 +29,7 @@ async def nt4_health() -> ToolResult:
             read = await session.get_values([base + "/text" for base in bases], timeout_s=READ_WAIT_S)
             texts = {name.removesuffix("/text"): str(seen.plain) for name, seen in read.items() if isinstance(seen, Observed)}
         out = assess(values, texts)
-        if cut := len(names) - MAX_TOPICS:
+        if (cut := len(names) - MAX_TOPICS) > 0:
             out["topics_not_read"] = cut
             out["flags"] = [*(f for f in out["flags"] if not f.startswith("none found")), f"low: {cut} topics were not read (limit {MAX_TOPICS}); the checks above may be incomplete"]
         return reply(out)

@@ -279,3 +279,26 @@ async def test_when_sample_checks_its_names_even_for_a_window_past_the_end(log_d
         await data_tools.wpilog_when(ELEVATOR, ">", 40, since_ms=10_000_000, sample=["/nope"])
     out = text(await data_tools.wpilog_when(ELEVATOR, ">", 40, since_ms=10_000_000, sample=["/Fake/Arm/Angle"]))
     assert out["n"] == 0 and out["sampled"] == {"/Fake/Arm/Angle": []}
+
+
+async def test_a_brownout_topic_with_no_samples_does_not_stop_the_scan(log_dir):
+    w = LogWriter()
+    w.start("NT:/SystemStats/BrownedOut", "boolean", "", BASE)  # started, never written
+    battery = w.start("NT:/SystemStats/BatteryVoltage", "double", '{"unit":"V"}', BASE)
+    w.append(battery, 12.0, at(0))
+    w.save(log_dir / "empty.wpilog")
+    await file_tools.wpilog_open("empty.wpilog")
+    assert text(await data_tools.wpilog_scan())["flags"][0] == "low: no Driver Station data, so the robot's enabled periods are unknown"
+
+
+async def test_changes_are_sampled_at_their_exact_time_not_the_rounded_one(log_dir):
+    w = LogWriter()
+    mode = w.start("NT:/Fake/Mode", "int64", "", BASE)
+    other = w.start("NT:/Fake/Other", "int64", "", BASE)
+    for t_us, v in ((0, 0), (1040, 1)):  # a change 1.04 ms in: reported as 1.0 ms, but sampled at 1.04
+        w.append(mode, v, BASE + t_us)
+        w.append(other, v + 10, BASE + t_us)
+    w.save(log_dir / "fine.wpilog")
+    await file_tools.wpilog_open("fine.wpilog")
+    out = text(await data_tools.wpilog_when("/Fake/Mode", "changed", sample=["/Fake/Other"]))
+    assert out["changes_ms"] == [1.0] and out["sampled"] == {"/Fake/Other": [11]}
