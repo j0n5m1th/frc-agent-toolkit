@@ -5,26 +5,26 @@ from frc_mcp_nt4.health import ALERTS, assess
 HEALTHY = {
     "/sys/battery": 12.4, "/sys/brownout": False, "/sys/cpu": 20.0, "/sys/ramutil": 40.0, "/sys/storageutil": 30.0, "/sys/temp": 51.0,
     "/sys/faults/canbus_down": 0, "/sys/faults/canbus_unavail": 0, "/canbus/s0/name": "rio", "/canbus/s0/up": True, "/canbus/s0/error": False,
-    "/diagnostics/canbusutil": 0.25, "/Netcomm/Status/HasUserCode": True, "/Netcomm/Status/HasUserCodeReady": True,
+    "/diagnostics/canbusutil": [10.0, 0.1, 0.0, 0.0, 0.0, 0.0], "/Netcomm/Status/HasUserCode": True, "/Netcomm/Status/HasUserCodeReady": True,
 }
 
 
 def test_a_healthy_controller_has_no_flags_and_says_what_was_not_checked():
     out = assess(HEALTHY, {})
     assert out["flags"] == ["none found by these checks"] and "not_checked" in out
-    assert out["controller"]["battery_v"] == 12.4 and out["controller"]["can_util_pct"] == 25.0
+    assert out["controller"]["battery_v"] == 12.4 and out["controller"]["can_util_pct"] == [10.0, 0.0, 0.0]
     assert out["controller"]["can_buses"] == {"s0": {"name": "rio", "up": True, "error": False}}
 
 
 def test_trouble_is_flagged_and_ranked_high_to_low():
     values = {**HEALTHY, "/sys/battery": 6.5, "/sys/brownout": True, "/sys/cpu": 97.0, "/sys/faults/canbus_down": 1, "/Netcomm/Status/HasUserCode": False,
-              "/sys/faultcounts/canbus": 3, "/canbus/s1/error": True, "/canbus/s1/up": True, "/diagnostics/canbusutil": 91.0}
+              "/sys/faultcounts/canbus": 3, "/canbus/s1/error": True, "/canbus/s1/up": True, "/diagnostics/canbusutil": [0.0, 0.0, 91.0, 0.91]}
     flags = assess(values, {})["flags"]
     severities = [f.split(":")[0] for f in flags]
     assert severities == sorted(severities, key=["high", "med", "low"].index)
     joined = " ".join(flags)
     for expected in ("battery reads 6.5 V", "brownout", "CAN fault flag(s) set: canbus_down", "no robot code is running", "cpu_pct is 97", "CAN bus s1 reports an error",
-                     "CAN bus use is 91%", "1 fault counter(s)"):
+                     "CAN bus use is 91% on bus s1", "1 fault counter(s)"):
         assert expected in joined
 
 

@@ -92,11 +92,13 @@ def assess(values: dict[str, Any], texts: dict[str, str]) -> dict[str, Any]:
         for bus, fields in sorted(buses.items()):
             if is_on(fields.get("error")):
                 flags.append(f"med: CAN bus {bus} reports an error")
-    if (util := num(DIAGNOSTICS + "canbusutil")) is not None:
-        percent = util * 100 if util <= 1 else util  # published as a fraction on some images, percent on others
-        controller["can_util_pct"] = round(percent, 1)
-        if percent > CAN_BUSY_PCT:
-            flags.append(f"med: CAN bus use is {percent:.0f}%")
+    util = values.get(DIAGNOSTICS + "canbusutil")
+    if isinstance(util, (list, tuple)) and util:
+        # seen on a real Systemcore (image alpha18): two numbers per bus, the percent first and the same use as a fraction second
+        per_bus = [round(float(u), 1) for u in util[0::2]]
+        controller["can_util_pct"] = per_bus
+        if max(per_bus) > CAN_BUSY_PCT:
+            flags.append(f"med: CAN bus use is {max(per_bus):.0f}% on bus s{per_bus.index(max(per_bus))}")
     if (health := values.get(DIAGNOSTICS + "canbushealth")) is not None:
         controller["can_health"] = health  # meaning not documented here, so shown as read
     code = {key: is_on(values[STATUS + name]) for key, name in (("running", "HasUserCode"), ("ready", "HasUserCodeReady")) if STATUS + name in values}
