@@ -7,7 +7,7 @@ Ask an AI assistant about what your robot is doing **right now**. This server ta
 | See what the robot is doing **right now** | this server, `frc-mcp nt4` |
 | Look back at a match or a test run | the log server, `frc-mcp wpilog` ([WPILOG.md](WPILOG.md)) |
 
-It is not a dashboard and it is not a robot controller. NetworkTables can drop updates, and nothing can bring them back. When the connection drops or updates are lost, the answer says so instead of guessing.
+It is not a dashboard and it is not a robot controller. NetworkTables can drop updates and nothing brings them back; the answer says so.
 
 ## Set it up
 
@@ -40,6 +40,7 @@ You do not need to name tools. Describe what you want and the assistant picks on
 | `nt4_wait_for` | Waits until a value meets a condition | "Tell me when the current goes above 40 A." |
 | `nt4_capture_start`, `nt4_capture_query`, `nt4_capture_stop` | Record in the background, ask many questions, then free it | "Record the drive speed for 30 seconds." |
 | `nt4_inspect` | Who is connected, and who publishes or reads a topic | "Who publishes /Tunables/ShooterRPS?" |
+| `nt4_health` | A Systemcore (port 6810): battery, CPU, CAN, alerts, ranked | "Is the controller OK?" |
 | `nt4_set_value`, `nt4_release_publisher` | Write a value, or release what you published (off by default) | "Set /Tunables/Testing/ShooterRPS to 50." |
 
 Prompts you can pick in your assistant, if it supports them: `explore_robot`, `diagnose_mechanism`, `compare_robot_signals`, `check_signal_steadiness`, `diagnose_connection`. They only read.
@@ -110,7 +111,7 @@ Writing can move a real robot, so the server only reads until you turn it on, an
 
 ## Smaller tool lists
 
-`NT4_TOOLSET=core` hides the capture tools and the two write tools (`nt4_watch` stays): 8 tools, about 2.1k tokens of tool definitions instead of about 3.4k for all 13. See [GETTING_STARTED](GETTING_STARTED.md#6-which-servers-to-keep-on) for what each server costs.
+`NT4_TOOLSET=core` hides the capture tools and the two write tools (`nt4_watch` stays): 9 tools, about 2.0k tokens of definitions instead of about 3.7k for all 14. Server costs: [GETTING_STARTED](GETTING_STARTED.md#6-which-servers-to-keep-on).
 
 ## Troubleshooting
 

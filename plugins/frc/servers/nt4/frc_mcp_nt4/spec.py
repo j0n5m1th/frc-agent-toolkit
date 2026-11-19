@@ -90,7 +90,7 @@ SPEC = ServerSpec(
     gates={gate_tag(config.allow_writes.env_name): config.writes_possible},  # the write tools are hidden until writes are on (and not read-only)
     tool_modules=(
         "frc_mcp_nt4.prompts_resources", "frc_mcp_nt4.tools.capture_tools", "frc_mcp_nt4.tools.capture_watch_tools", "frc_mcp_nt4.tools.connection_tools",
-        "frc_mcp_nt4.tools.discovery_tools", "frc_mcp_nt4.tools.read_tools", "frc_mcp_nt4.tools.write_tools",
+        "frc_mcp_nt4.tools.discovery_tools", "frc_mcp_nt4.tools.health_tools", "frc_mcp_nt4.tools.read_tools", "frc_mcp_nt4.tools.write_tools",
     ),
     check=_check,
     doctor_skip="it connects to NT4_HOST, which may be a real robot",

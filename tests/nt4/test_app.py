@@ -10,7 +10,7 @@ from frc_mcp_nt4.spec import SPEC, lifespan
 _, apply_toolset = SPEC.load()
 
 FULL_TOOLS = {
-    "nt4_connection", "nt4_status", "nt4_list_topics", "nt4_inspect", "nt4_get_values",
+    "nt4_connection", "nt4_status", "nt4_list_topics", "nt4_inspect", "nt4_health", "nt4_get_values",
     "nt4_get_widgets", "nt4_wait_for", "nt4_capture_start", "nt4_capture_query", "nt4_capture_stop", "nt4_watch",
     "nt4_set_value", "nt4_release_publisher",
 }

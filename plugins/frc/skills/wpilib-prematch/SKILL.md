@@ -9,7 +9,7 @@ Read only. Never enable or move the robot, whatever the user says; tell them to 
 
 1. `nt4_connection`: the robot program on port 5810, a real Systemcore's own health on port 6810 (topics: `systemcore-live`). Report host and port; no retries.
 2. Robot program: `nt4_get_widgets` for the autonomous chooser (is the right auto picked?).
-3. Controller (6810): battery (resting under about 12 V is low), brownout, fault counts, CPU, storage, code running, high alerts.
+3. Controller (6810): `nt4_health` (battery, brownout, CPU, storage, CAN, code running, alerts; its `flags` are ranked).
 4. CAN: bus up and error counts. With `ctre-diag` on, `diag_status` for missing devices and `diag_bus` for errors (`ctre-diagnose`).
 5. With `vscode` on, `wpilib_info`: team number and vendordep versions. With `ctre-tools` on, `ctre_status`: versions must match the project's channel.
 6. Show a table: check, value, PASS / WATCH / FAIL / not checked. Mark PASS only for what you read. Limits are rules of thumb; say so.
