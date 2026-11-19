@@ -77,8 +77,10 @@ def test_error_lines_after_a_stop_are_not_counted_as_the_sims_errors(project):
     run = SimRun(project, "simulateJava", [])
     run._on_line("ERROR: a real fault while running")
     run.console.ending = True  # what stop() and the time limit set before they kill the process
-    run._on_line("FAILURE: Build failed with an exception.")
-    assert run.console.errors == 1 and run.console.errors_at_end == 1
+    run._on_line("FAILURE: Build failed with an exception.")  # Gradle reporting the kill: not counted anywhere
+    assert run.console.errors == 1 and run.console.errors_at_end == 0
+    run._on_line("Exception in thread main java.lang.IllegalStateException")  # a real error while stopping
+    assert run.console.errors_at_end == 1
     run.end_reason, run.exit_code = "stopped", 1
     from frc_mcp_sim.session import session
 

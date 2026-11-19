@@ -69,16 +69,16 @@ Plugin servers start on. Each one that is on costs tokens in every session. A se
 
 | What you are doing | Keep on | Startup tokens | Definitions (full / core) |
 |---|---|---:|---:|
-| Writing code, no robot | `vscode` | 104 | 609 / 281 |
-| Simulator | `sim`, `nt4` | 98 + 182 | 474 / 319 and 3,442 / 2,114 |
-| On the bench with the robot | `nt4`, `systemcore`, `ctre-diag` | 182 + 203 + 141 | 3,442 / 2,114, 1,335 / 1,099 and 691 / 486 |
-| After a match, with logs | `wpilog`, `ctre-owlet` | 174 + 107 | 2,653 / 2,171 and 531 / 531 |
-| CTRE devices | `ctre-tools`, `ctre-diag`, `ctre-caniv`, `ctre-passerine` | 67 + 141 + 115 + 70 | 270, 691 / 486, 362 and 246 |
-| Profiling Java | `jfr` | 135 | 1,143 / 985 |
+| Writing code, no robot | `vscode` | 104 | 575 / 246 |
+| Simulator | `sim`, `nt4` | 96 + 179 | 417 / 268 and 3,265 / 2,032 |
+| On the bench with the robot | `nt4`, `systemcore`, `ctre-diag` | 179 + 227 + 129 | 3,265 / 2,032, 1,270 / 1,051 and 651 / 438 |
+| After a match, with logs | `wpilog`, `ctre-owlet` | 179 + 97 | 2,535 / 2,070 and 475 |
+| CTRE devices | `ctre-tools`, `ctre-diag`, `ctre-caniv`, `ctre-passerine` | 71 + 129 + 102 + 69 | 229, 651 / 438, 318 and 197 |
+| Profiling Java | `jfr` | 122 | 1,018 / 872 |
 
 "Startup" loads at the start of every session. "Definitions" load when the assistant first uses a tool.
 
-Tokens are estimates (tiktoken) measured before the plugin was renamed `frc-toolkit` (names are now longer). With all eleven on (the default), startup is about 1,400 tokens, plus about 350 for the skills the assistant can start by itself. The per-server table, with memory and start time, is in the [benchmarks](../evaluations/README.md#benchmarks). A test fails if a server grows more than 5%.
+Tokens are characters divided by 4, the same count `tests/common/token_baseline.json` checks (a rough count: trust ratios more than exact numbers). With all eleven on (the default), startup is about 1,900 tokens, of which about 560 are the descriptions of the skills the assistant can start by itself. A test fails if a server grows more than 5%. Older figures: [benchmarks](../evaluations/README.md#benchmarks).
 
 **Smaller tool lists.** The `core` toolset hides the rarely used tools. It helps most in assistants with no tool search, which load every definition at the start. Set the server's toolset setting to `core` (for example `NT4_TOOLSET=core`; names in [SETTINGS](SETTINGS.md)). The three small CTRE servers have no `core` set. If `ENABLE_TOOL_SEARCH=false` is set, a server uses `core` on its own. See [SETTINGS](SETTINGS.md).
 

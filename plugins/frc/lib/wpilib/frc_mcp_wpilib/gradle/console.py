@@ -16,6 +16,7 @@ MAX_LINE_CHARS = 300
 STARTING_MARKER = "Robot program starting"
 READY_MARKER = "Robot program startup complete"
 _ERROR_RE = re.compile(r"\bERROR\b|\bFATAL\b|\berror:|Error:|Exception|FAILURE:|BUILD FAILED|^\s+at \S+\(.*\)\s*$")
+_SHUTDOWN_NOISE = re.compile(r"FAILURE: Build failed|BUILD FAILED|Execution failed for task|finished with non-zero exit value|What went wrong")  # what Gradle prints when its process is killed
 _WARN_RE = re.compile(r"\bWARN(?:ING)?\b|Warning")
 _NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
 _DATALOG_RE = re.compile(r"Logging to '(.+?\.wpilog)'")  # DataLogManager: where this run writes its .wpilog
@@ -61,7 +62,7 @@ class Console:
         self._next_seq += 1
         self._lines.append(line)
         if level == "error" and self.ending:
-            self.errors_at_end += 1
+            self.errors_at_end += not _SHUTDOWN_NOISE.search(text)  # Gradle's own report of the kill is not an error of the run
         else:
             self.errors += level == "error"
         self.warnings += level == "warn"
