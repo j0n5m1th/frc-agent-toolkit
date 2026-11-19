@@ -11,13 +11,14 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from typing import Any
 
+from frc_mcp_wpilib.reduce.stats import US_PER_S
+
 from .logfile import Topic, serialized
 from .loglike import LogLike
 from .rows import LogRow, Rows
 from .text_queries import text_topics
 from .timeline import origin_us, phases
 
-US_PER_S = 1_000_000
 LOW_VOLTS, BROWNOUT_VOLTS = 10.0, 7.0  # the roboRIO can brown out near 7 V
 MIN_SILENT_UPDATES = 100  # a topic with fewer updates is event-driven; its silence says nothing
 MIN_SILENT_S = 10.0

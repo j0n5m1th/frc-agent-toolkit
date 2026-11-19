@@ -28,6 +28,7 @@ from .types import MsRow, Reduce
 
 # The two unit factors of the µs-based NT4 clock, declared once for every module that converts it.
 US_PER_MS = 1000  # microseconds per millisecond, for µs -> ms
+US_PER_S = 1_000_000  # microseconds per second, for µs -> s
 MS_PER_S = 1000.0  # milliseconds per second, for ms -> s
 MAX_DURATION_STATES = 12  # distinct values listed by reduce=durations, longest total time first
 STEP_MIN_SAMPLES = 4  # reduce=step_response needs at least this many connected samples to see a rise and a settle

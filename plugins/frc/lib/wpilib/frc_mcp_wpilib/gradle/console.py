@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from itertools import islice
 from typing import Literal
 
+from ..tooling.query_bases import contains_any
+
 MAX_LINES = 5000
 MAX_LINE_CHARS = 300
 STARTING_MARKER = "Robot program starting"
@@ -89,13 +91,12 @@ class Console:
     def select(self, *, since: int | None = None, level: LineLevel | Literal["all"] = "all",
                contains: str | None = None) -> list[Line]:
         """Lines after `since` (a seq from an earlier call) of at least `level` ('warn' also keeps errors), containing the text."""
-        needle = (contains or "").lower()
         first_kept = self._lines[0].seq if self._lines else self._next_seq  # the lowest seq still held (a skipped line leaves a gap)
         out = []
         for line in islice(self._lines, max((since or 0) + 1 - first_kept, 0), None):
             if (level == "error" and line.level != "error") or (level == "warn" and line.level == "info"):
                 continue
-            if needle and needle not in line.text.lower():
+            if contains and not contains_any(contains, line.text):
                 continue
             out.append(line)
         return out

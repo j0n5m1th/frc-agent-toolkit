@@ -25,7 +25,7 @@ VOCABULARY: dict[str, set[str]] = {
     "until_ms": {describe(tp.UntilMs)},
     "also": {describe(tp.Also)},
     "depth": {describe(tp.Depth)},
-    "name_contains": {describe(tp.NameContains), describe(tp.AnyName)},
+    "name_contains": {describe(tp.NameContains)},
     "struct_fields": {describe(tp.StructFields)},
     "include_hidden": {describe(tp.IncludeHidden)},
     "max_samples": {describe(tp.MaxSamples)},

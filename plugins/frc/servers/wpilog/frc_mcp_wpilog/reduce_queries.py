@@ -7,7 +7,7 @@ from typing import Any
 from frc_mcp_wpilib.errors import WPILibMCPError
 from frc_mcp_wpilib.reduce.segments import CAVEAT_FLAGS, Window
 from frc_mcp_wpilib.reduce.shared import hoist_shared
-from frc_mcp_wpilib.reduce.stats import US_PER_MS, Shaper, reduce_rows
+from frc_mcp_wpilib.reduce.stats import US_PER_MS, US_PER_S, Shaper, reduce_rows
 from frc_mcp_wpilib.values import DEFAULT_PRECISION, shape, type_field
 
 from .errors import WPILogError
@@ -203,5 +203,5 @@ def by_mode(log: LogLike, names: list[str], spec: QuerySpec) -> dict[str, Any]:
         label = phase.mode if seen[phase.mode] == 1 else f"{phase.mode}#{seen[phase.mode]}"
         start_us, end_us = phase.start_us - log.start_us, phase.end_us - log.start_us
         result = query(log, names, spec, Range("start", start_us / US_PER_MS, end_us / US_PER_MS))
-        modes[label] = {"from_s": round(start_us / 1e6, 1), "to_s": round(end_us / 1e6, 1), **{k: v for k, v in result.items() if k != "t0_s"}}
+        modes[label] = {"from_s": round(start_us / US_PER_S, 1), "to_s": round(end_us / US_PER_S, 1), **{k: v for k, v in result.items() if k != "t0_s"}}
     return {"modes": modes}

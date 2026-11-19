@@ -12,8 +12,7 @@ from ..reduce.types import Reduce
 Fields = Annotated[list[str] | None, Field(description="Struct fields to keep, e.g. ['translation.x'] or ['x']")]
 Topics = Annotated[list[str], Field(min_length=1, max_length=50, description="Exact topic names, e.g. ['/DriveState/Pose']")]
 Depth = Annotated[int | None, Field(ge=1, le=10, description="Path segments after prefix to show; deeper topics collapse into 'path/': count (1 = children)")]
-NameContains = Annotated[str | None, Field(description="Case-insensitive substring to match (a name, or a line of text)")]
-AnyName = Annotated[str | None, Field(description="Case-insensitive substring; a|b matches either (a name, or a line of text)")]
+NameContains = Annotated[str | None, Field(description="Case-insensitive substring; a|b matches either (a name, or a line of text)")]
 StructFields = Annotated[bool, Field(description="List each struct/protobuf type's field names once, under struct_fields")]
 PageLimit = Annotated[int, Field(ge=1, le=500, description="Max groups + topics per page")]
 PageOffset = Annotated[int, Field(ge=0, description="Offset from next_offset")]
@@ -46,7 +45,6 @@ __all__ = [
     "MaxRows",
     "MaxSamples",
     "MaxTopics",
-    "AnyName",
     "NameContains",
     "PageLimit",
     "PageOffset",
