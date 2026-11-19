@@ -1,5 +1,5 @@
 {
-  "description": "Sets up the plugin's Python environment before the servers start, so the first start is not slow (prints nothing), and makes Claude Code ask a person before the tools that change robot settings or code, change a device's settings or firmware, install tools, join or leave Wi-Fi, or load the robot controller (and block the call if that check itself fails).",
+  "description": "Sets up the plugin's Python environment before the servers start, so the first start is not slow (prints nothing), and makes Claude Code ask a person before reading a log outside the project folder and before the tools that change robot settings or code, change a device's settings or firmware, install tools, join or leave Wi-Fi, or load the robot controller (and block the call if that check itself fails).",
   "hooks": {
     "SessionStart": [
       {
@@ -42,6 +42,31 @@
               "hook",
               "ask",
               "This FRC tool changes the robot, a device or this computer, or loads the robot controller (not in a match). Confirm it?"
+            ],
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      }
+      ,
+      {
+        "matcher": "^mcp__plugin_frc-toolkit_wpilog__(wpilog_open|wpilog_list)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv",
+            "args": [
+              "run",
+              "--project",
+              "${CLAUDE_PLUGIN_ROOT}",
+              "--frozen",
+              "--no-dev",
+              "--python",
+              "3.13",
+              "frc-mcp",
+              "hook",
+              "ask-outside",
+              "This reads a log file or folder outside your project folder. Allow it?"
             ],
             "timeout": 30,
             "onFailure": "block"

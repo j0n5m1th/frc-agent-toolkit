@@ -5,7 +5,7 @@ description: Analyze .wpilog, Driver Station .dslog and converted .hoot logs, sy
 
 Needs `wpilog`; if tools are missing, say which to switch back on in `/mcp`, then stop.
 
-0. Only the project folder is readable: ask the user to copy files from elsewhere into it. Sources: the robot `.wpilog`; the Driver Station `.dslog` (battery, brownouts, packet loss, PD currents); CTRE `.hoot` (convert first with ctre-convert).
+0. A log elsewhere (USB stick, the Driver Station's `Log Files` folder): give `wpilog_open` its full path, or `wpilog_list` a `folder`; Claude Code asks the user first. If refused, ask them to copy it into the project folder. Sources: the robot `.wpilog`; the Driver Station `.dslog` (battery, brownouts, packet loss, PD currents); CTRE `.hoot` (convert first with ctre-convert).
 1. `wpilog_list`, then `wpilog_open` (newest unless named); read the summary, then `wpilog_scan` for ranked leads. For a report after a match, use `wpilib-triage`.
 2. Several files from one match: open each, then `wpilog_sync` (robot log first). Details: `references/wpilog-tools.md`.
 3. Find names with `wpilog_topics` (`depth=1`, then `name_contains`); never guess.

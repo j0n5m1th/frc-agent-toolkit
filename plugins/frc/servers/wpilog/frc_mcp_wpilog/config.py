@@ -12,9 +12,10 @@ from frc_mcp_core.folders import (
     check_size,
     inside,
     newest_first,
+    too_broad,
     walk_folders,
 )
-from frc_mcp_core.settings import env_megabytes
+from frc_mcp_core.settings import Capability, env_megabytes, nonblank
 from frc_mcp_core.toolset import Toolset
 from frc_mcp_wpilib.wpilog_writer import SUFFIX
 
@@ -25,13 +26,17 @@ FOLDERS = AllowedFolders("WPILOG_DIR", WPILogError)  # the shared rule for which
 
 DEFAULT_MAX_MB = 2048
 
+# Logs elsewhere (a USB stick, the Driver Station's folder) are read only with this on. The plugin turns it on and Claude Code asks the person before each such call
+# (`frc-mcp hook ask-outside`); the server still opens only `.wpilog`, `.dslog` and `.dsevents` files, read-only.
+OUTSIDE = Capability("WPILOG_ALLOW_OUTSIDE", "Reading logs outside the project folder", WPILogError, why="in the plugin, turn on \"Read logs from other folders\"; it asks you before each such read", getenv=nonblank, expects="1 or 0")
+
 
 TOOLSET = Toolset("WPILOG_TOOLSET", WPILogError)  # read it with TOOLSET.current(); `create_server` makes the server's apply_toolset from it
 
 
 # What to do about a log the server may not read. The plugin allows only the project folder and its user cannot change that, so
 # they copy the file in; someone running the server themselves can name more folders.
-HOW_TO_ALLOW = "Copy the file into the project folder. (If you run the server yourself, add its folder to WPILOG_DIR.)"
+HOW_TO_ALLOW = "Copy the file into the project folder, or turn on \"Read logs from other folders\" in the plugin. (If you run the server yourself, add its folder to WPILOG_DIR or set WPILOG_ALLOW_OUTSIDE=1.)"
 HOW_TO_FIND = "Put the logs in the project folder. (If you run the server yourself, set WPILOG_DIR to the folder that has them.)"
 
 
@@ -54,6 +59,21 @@ def max_log_bytes() -> int:
 
 def _is_log(file_name: str) -> bool:
     return file_name.lower().endswith((SUFFIX, *dslog.SUFFIXES))
+
+
+def search_roots(folder: str | None) -> list[Path]:
+    """The folders `wpilog_list` searches: the allowed ones, or `folder` alone (outside them only with WPILOG_ALLOW_OUTSIDE; never a drive root or the home folder)."""
+    roots = log_roots()
+    if not folder:
+        return roots
+    chosen = Path(folder).expanduser().resolve()
+    if not chosen.is_dir():
+        raise WPILogError(f"{folder!r} is not a folder.")
+    if not inside(chosen, roots):
+        OUTSIDE.require()
+        if too_broad(chosen):
+            raise WPILogError(f"{chosen} is a drive root or your home folder, which is too broad to search. Name the folder that holds the logs.")
+    return [chosen]
 
 
 def find_logs(roots: list[Path] | None = None, name_contains: str | None = None) -> list[Path]:
@@ -93,10 +113,13 @@ def resolve_log(name: str) -> Path:
 
     located = FOLDERS.locate(name, lambda: (p for p in find_logs(roots) if same(p)), roots=roots)
     matches, outside = located.inside, located.outside
+    elsewhere = bool(outside) and OUTSIDE.enabled()  # a log outside the folders, allowed by the setting (the plugin has asked first)
+    if elsewhere:
+        matches, outside = matches + outside, []
     if dslog.is_ds(given):  # either file of a session opens the session; its other file is judged too (it may be a link out)
         canonical = [dslog.canonical(m).resolve() for m in matches]
         # every file the session reads (the .dslog AND the .dsevents) must resolve inside the folders, not only the one named
-        safe = [c for c in canonical if all(inside(f.resolve(), roots) for f in dslog.pair(c) if f is not None)]
+        safe = [c for c in canonical if OUTSIDE.enabled() or all(inside(f.resolve(), roots) for f in dslog.pair(c) if f is not None)]
         matches, outside = safe, outside + [c for c in canonical if c not in safe]
     if outside:
         raise WPILogError(f"{name!r} is outside the folders this server may read ({where}). {HOW_TO_ALLOW}")

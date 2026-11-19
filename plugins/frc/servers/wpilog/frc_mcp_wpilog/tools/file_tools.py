@@ -28,17 +28,18 @@ from ..store import logs
 async def wpilog_list(
     name_contains: NameContains = None,
     limit: Limit = 20,
+    folder: Annotated[str | None, Field(description="Search this other folder instead (asks you first)")] = None,
 ) -> ToolResult:
-    """Match logs (.wpilog and Driver Station .dslog) this server may read, newest first (name, size, date). Open one with wpilog_open."""
-    found = await asyncio.to_thread(config.find_logs, None, name_contains)
-    roots = config.log_roots()
-    rows = [file_row(path, roots) for path in found[:limit]]
+    """Match logs (.wpilog and Driver Station .dslog) this server may read, newest first (name, size, date). Open one with wpilog_open. `folder` lists another folder."""
+    roots = await asyncio.to_thread(config.search_roots, folder)
+    found = await asyncio.to_thread(config.find_logs, roots, name_contains)
+    rows = [file_row(path, [] if folder else roots) for path in found[:limit]]  # another folder's files show their full path, which wpilog_open takes
     out: dict[str, object] = {"total": len(found), "logs": rows}
     if len(found) > limit:
         out["omitted"] = len(found) - limit
     if not found:
         out["hint"] = f"No logs under {', '.join(str(r) for r in roots)}. {config.HOW_TO_FIND}"
-    elif notice := config.default_root_notice():
+    elif not folder and (notice := config.default_root_notice()):
         out["hint"] = notice
     return reply(out)
 

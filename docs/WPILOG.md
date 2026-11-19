@@ -16,14 +16,14 @@ uv run --project plugins/frc frc-mcp demo log --out logs\practice.wpilog
 uv run --project plugins/frc frc-mcp wpilog check logs\practice.wpilog
 ```
 
-These two commands need a clone of this repository. Without a clone (plugin only), use the `uvx` form in [Getting started, step 7](GETTING_STARTED.md#7-the-frc-mcp-command). `check` runs without an assistant. It shows the length, when the robot was enabled (autonomous 2 s to 17 s, teleop 19 s to 29 s) and the busiest topics. 
+These commands need a clone of this repository (plugin only: use the `uvx` form in [Getting started, step 7](GETTING_STARTED.md#7-the-frc-mcp-command)). `check` runs without an assistant and shows the length, when the robot was enabled (autonomous 2 s to 17 s, teleop 19 s to 29 s) and the busiest topics. 
 
 ### Your own logs
 
-- On a real robot, WPILib's `DataLogManager` writes `.wpilog` files to the roboRIO (or a USB stick). Copy them to your computer. In simulation, they are in the robot project's `logs` folder.
-- Live-server recordings (`nt4_capture_start` with `log=true`) are also `.wpilog`. In the plugin, copy it into your project folder.
+- On a real robot, WPILib's `DataLogManager` writes `.wpilog` files to the roboRIO (or a USB stick). Copy them to your computer, or give the assistant the full path (or `wpilog_list` `folder`): the plugin asks you first. In simulation, they are in the robot project's `logs` folder.
+- Live-server recordings (`nt4_capture_start` with `log=true`) are also `.wpilog`. In the plugin, copy it into your project folder or give its full path.
 - Driver Station logs (`.dslog`, `.dsevents`) open the same way: see [Driver Station logs](#driver-station-logs).
-- **Set `WPILOG_DIR` to the one folder that holds your logs**, with an absolute path. The server reads that folder and a few levels below it, and refuses anything outside. In the plugin, it is the folder where you started Claude Code. If it is unset, the server uses whatever folder it started in. Assistants often start servers from your home folder, so it may find nothing, or search a huge folder tree.
+- **Set `WPILOG_DIR` to the one folder that holds your logs**, with an absolute path. The server reads that folder and a few levels below it, and refuses anything outside. In the plugin, it is the folder where you started Claude Code. If unset, the server uses the folder it started in, often your home folder: it may find nothing, or search a huge tree.
 
 ## The workflow
 
@@ -85,9 +85,9 @@ A log holds only **what the robot recorded**. Timing is the update's own timesta
 
 **Measure a signal.** "How steady was the battery voltage? What was the worst dip?" You should see 11.475 V to 12.6 V, dipping while the elevator draws current.
 
-**When did it happen.** "When did the elevator draw more than 40 amps? Use times since autonomous started." You should see 0.4 s spikes every 5 s, seven in all (the first is before autonomous, so its time is negative). Add "while the robot was in autonomous" (`also`) and only the three inside it remain, at 3 s, 8 s and 13 s.
+**When did it happen.** "When did the elevator draw more than 40 amps? Use times since autonomous started." You should see seven 0.4 s spikes, 5 s apart (the first is before autonomous, so its time is negative). Add "while the robot was in autonomous" (`also`) and three remain, at 3 s, 8 s and 13 s.
 
-**Compare two runs.** Open both logs, then: "Compare the elevator current in the two logs, using times since autonomous started in each." For settings, ask "What did we change between these two matches?" (`wpilog_diff`). It lists tunables and constants that differ, that only one log has, or that changed during one. Busy signals (over 2,000 updates) are skipped. `prefix="/Tunables/"` narrows it.
+**Compare two runs.** Open both, then: "Compare the elevator current in the two logs, using times since autonomous started in each." For settings, ask "What did we change between these two matches?" (`wpilog_diff`). It lists tunables and constants that differ, that only one log has, or that changed during one. Busy signals (over 2,000 updates) are skipped. `prefix="/Tunables/"` narrows it.
 
 **Scan for trouble.** "Scan this log." `wpilog_scan` runs the same checks every time and returns ranked `flags`: errors, loop overruns, battery below 10 V or 7 V, brownouts, packet loss, CAN use, signals that stopped. It finds the battery and link topics by name, so a team with other names gets `checked: false` for that part.
 
@@ -115,7 +115,7 @@ A log never enabled cannot be synced by edges. A Systemcore has no battery clock
 
 ## Driver Station logs
 
-For each session, the Driver Station laptop saves two files with the same name in `C:\Users\Public\Documents\FRC\Log Files`. The `.dslog` records, 50 times a second, battery voltage, brownouts, network and CPU numbers, the robot's mode and the current on each power channel. The `.dsevents` holds messages (errors, warnings, prints, "FMS Connected"). In the plugin, copy them into your project folder; else point `WPILOG_DIR` at the folder. `wpilog_list` shows each session once, and opening either file opens both.
+For each session, the Driver Station laptop saves two files with the same name in `C:\Users\Public\Documents\FRC\Log Files`. The `.dslog` records, 50 times a second, battery voltage, brownouts, network and CPU numbers, the robot's mode and each power channel's current. The `.dsevents` holds messages (errors, warnings, prints, "FMS Connected"). In the plugin, give the full path of the folder (the assistant asks you first), or copy them in; else point `WPILOG_DIR` at it. `wpilog_list` shows each session once, and opening either file opens both.
 
 | Topic | What it is |
 |---|---|
@@ -144,7 +144,7 @@ Settings are in [SETTINGS](SETTINGS.md#every-other-setting) (`WPILOG_DIR`, `WPIL
 - `WPILOG_TOOLSET=core` hides `wpilog_diff`, `wpilog_sync` and `wpilog_close` (about 2.2k tokens of definitions instead of 2.7k).
 - A log cut short (power lost while logging) opens with a warning. Everything before the cut is readable.
 
-**Time.** Opening reads the whole file once. Measured on a laptop: about 25 seconds for a 230 MB log with 15 million updates, and about 9 seconds for a real 225 MB log with 5.3 million updates. Topics with 2,000 updates or fewer are read in that pass. The first question about a busier topic reads the file again (about 6 seconds on a real 225 MB log). Later questions about it are instant.
+**Time.** Opening reads the whole file once. Measured on a laptop: about 25 seconds for a 230 MB log with 15 million updates, and about 9 seconds for a real 225 MB log with 5.3 million. Topics with 2,000 updates or fewer are read in that pass; the first question about a busier topic reads the file again (about 6 seconds); later ones are instant.
 
 ## Troubleshooting
 

@@ -34,13 +34,13 @@
    "gates-off": {
     "tools": 11,
     "names": 124,
-    "defs": 2535,
+    "defs": 2566,
     "instructions": 55
    },
    "gates-on": {
     "tools": 11,
     "names": 124,
-    "defs": 2535,
+    "defs": 2566,
     "instructions": 55
    }
   },
@@ -48,13 +48,13 @@
    "gates-off": {
     "tools": 8,
     "names": 91,
-    "defs": 2070,
+    "defs": 2101,
     "instructions": 47
    },
    "gates-on": {
     "tools": 8,
     "names": 91,
-    "defs": 2070,
+    "defs": 2101,
     "instructions": 47
    }
   }
