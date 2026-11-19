@@ -38,6 +38,7 @@ async def test_the_four_tools_answer_when_called_directly(project):
 
     stopped = json.loads((await sim_stop()).content[0].text)
     assert stopped["state"] == "stopped" and "exit_code" in stopped and "hint" not in stopped
+    assert stopped["exit_code"] == 0 or "exit_expected" in stopped  # a killed run exits non-zero, and the reply says that is normal
 
 
 @pytest.mark.slow
@@ -70,3 +71,18 @@ async def test_wait_port_closed_gives_up_on_a_port_that_stays_open():
         assert await wait_port_closed(server.sockets[0].getsockname()[1], timeout_s=0.6) is False
     finally:
         server.close()
+
+
+def test_error_lines_after_a_stop_are_not_counted_as_the_sims_errors(project):
+    run = SimRun(project, "simulateJava", [])
+    run._on_line("ERROR: a real fault while running")
+    run.console.ending = True  # what stop() and the time limit set before they kill the process
+    run._on_line("FAILURE: Build failed with an exception.")
+    assert run.console.errors == 1 and run.console.errors_at_end == 1
+    run.end_reason, run.exit_code = "stopped", 1
+    from frc_mcp_sim.session import session
+
+    session.run = run
+    out = asyncio.run(session.status())
+    assert out["errors"] == 1 and out["errors_at_stop"] == 1 and "exit_expected" in out
+    session.run = None

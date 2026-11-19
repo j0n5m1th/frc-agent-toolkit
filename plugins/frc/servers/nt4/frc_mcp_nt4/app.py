@@ -22,7 +22,6 @@ from frc_mcp_wpilib.tooling.topic_params import (
     MaxRows,
     MaxSamples,
     MaxTopics,
-    NameContains,
     PageLimit,
     PageOffset,
     ReduceParam,
@@ -32,6 +31,9 @@ from frc_mcp_wpilib.tooling.topic_params import (
     Threshold,
     Topics,
     UntilMs,
+)
+from frc_mcp_wpilib.tooling.topic_params import (
+    AnyName as NameContains,
 )
 
 from .spec import SPEC, WATCH_HINT, CoreAwareToolList, server_instructions, slim_tools

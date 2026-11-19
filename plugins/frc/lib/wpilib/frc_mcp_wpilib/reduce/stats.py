@@ -35,6 +35,9 @@ STEP_RISE_LOW, STEP_RISE_HIGH = 0.10, 0.90  # rise time runs from 10% to 90% of 
 STEP_SETTLE_BAND = 0.02  # settled = staying within 2% of the step size around the final value
 STEP_TAIL_FRACTION = 0.10  # the final value is the mean of the last 10% of the samples
 
+MAX_PEAKS = 5  # reduce=peaks lists at most this many highs and lows
+PEAK_SEPARATION_MS = 500.0  # two peaks closer than this are one event
+
 Run = tuple[Any, float, float]  # (value, start_ms, end_ms)
 Weighted = tuple[float, float, float]  # (start_ms, end_ms, value held)
 Column = list[list[tuple[float, float]]]  # per connected segment, (ms, number) rows of one value
@@ -77,7 +80,7 @@ def _reduce_segmented(
     window: Window,
 ) -> dict[str, Any]:
     """latest / summary / changes / samples / percentiles / rate / step_response: reductions that first split the rows at outages."""
-    if reduce in ("summary", "changes", "percentiles", "rate", "step_response"):
+    if reduce in ("summary", "changes", "percentiles", "rate", "step_response", "peaks", "buckets"):
         segments, affected, out_of_order = _ordered_segments(rows, window)
     else:
         segments, affected = split_segments(rows, replace(window, loss_windows=()))
@@ -98,6 +101,10 @@ def _reduce_segmented(
         body = _rate(rows, segments, shaper, steady=not affected and not out_of_order)
     elif reduce == "step_response":
         body = _step_response(rows, segments, shaper)
+    elif reduce == "peaks":
+        body = _peaks(rows, segments, shaper, max_samples)
+    elif reduce == "buckets":
+        body = _buckets(rows, segments, shaper, max_samples)
     else:
         body = _columnar(rows, segments, used, shaper, reduce, max_samples)
     return _annotate(body, affected=affected, used=len(used), out_of_order=out_of_order)
@@ -321,6 +328,65 @@ def _measure_step(samples: list[tuple[float, float]], digits: int) -> dict[str, 
     outside = [i for i, p in enumerate(progress) if abs(p - 1) > STEP_SETTLE_BAND]
     out["settle_ms"] = round(times[outside[-1] + 1] - times[0], 1) if outside else 0.0
     return out
+
+
+def _finite_samples(column: Column) -> tuple[list[tuple[float, float]], int]:
+    """A column's finite (ms, number) samples across its segments, and how many were left out."""
+    kept = [s for segment in column for s in segment if math.isfinite(s[1])]
+    return kept, sum(map(len, column)) - len(kept)
+
+
+def _peaks(rows: list[MsRow], segments: list[Segment], shaper: Shaper, max_samples: int) -> dict[str, Any]:
+    """Peaks (`high`: turning points above the median) and valleys (`low`: turning points below it) as [t_ms, value], the furthest from the
+    median first, with the `median` they are measured from. Each is at least PEAK_SEPARATION_MS from a bigger one, so a spike is one event and not
+    its neighbouring samples. A signal that runs in reverse shows up in `low`; a flat or one-sided signal leaves the other list empty.
+    At most MAX_PEAKS of each (or `max_samples` when that is smaller)."""
+    digits = shaper.precision
+    count = min(max_samples, MAX_PEAKS)
+
+    def pick(samples: list[tuple[float, float]], sign: int, median: float) -> list[list[float]]:
+        padded = [-math.inf, *(sign * v for _, v in samples), -math.inf]
+        turning = [s for i, s in enumerate(samples) if padded[i + 1] > padded[i] and padded[i + 1] > padded[i + 2]]  # strictly above both neighbours
+        chosen: list[tuple[float, float]] = []
+        for t, v in sorted((s for s in turning if sign * (s[1] - median) > 0), key=lambda s: -sign * s[1]):
+            if all(abs(t - other) >= PEAK_SEPARATION_MS for other, _ in chosen):
+                chosen.append((t, v))
+                if len(chosen) == count:
+                    break
+        return [[round(t, 1), round(v, digits)] for t, v in chosen]
+
+    def stats(column: Column) -> dict[str, Any]:
+        samples, bad = _finite_samples(column)
+        if not samples:
+            return _nothing_finite(bad)
+        median = statistics.median(v for _, v in samples)
+        steps = [s for i, s in enumerate(samples) if i == 0 or s[1] != samples[i - 1][1]]  # a plateau is one point, not a peak at each end
+        return {"median": round(median, digits), "high": pick(steps, 1, median), "low": pick(steps, -1, median)}
+
+    return _per_column(_number_columns(segments, shaper, "peaks"), shaper, rows, stats)
+
+
+def _buckets(rows: list[MsRow], segments: list[Segment], shaper: Shaper, max_samples: int) -> dict[str, Any]:
+    """min, max and sample_mean (the plain mean of the logged samples, not time-weighted; use `time_weighted` for that) per equal time bucket, as parallel arrays (at most `max_samples` buckets across the data). Unlike `samples`,
+    the min and max keep a spike inside its bucket, so the shape of a long run shows without reading every update."""
+    digits = shaper.precision
+    count = max(max_samples, 1)
+
+    def stats(column: Column) -> dict[str, Any]:
+        samples, bad = _finite_samples(column)
+        if not samples:
+            return _nothing_finite(bad)
+        start, end = samples[0][0], samples[-1][0]
+        width = max((end - start) / count, 1.0)  # ms; at least 1 so equal timestamps share a bucket
+        grouped: dict[int, list[float]] = {}
+        for t, v in samples:
+            grouped.setdefault(min(int((t - start) // width), count - 1), []).append(v)
+        order = sorted(grouped)
+        return {"bucket_ms": round(width, 1), "t_ms": [round(start + i * width, 1) for i in order],
+                "min": [round(min(grouped[i]), digits) for i in order], "max": [round(max(grouped[i]), digits) for i in order],
+                "sample_mean": [round(statistics.fmean(grouped[i]), digits) for i in order]}
+
+    return _per_column(_number_columns(segments, shaper, "buckets"), shaper, rows, stats)
 
 
 def _just_changes(segments: list[Segment]) -> list[MsRow]:

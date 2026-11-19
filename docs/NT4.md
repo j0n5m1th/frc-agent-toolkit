@@ -57,7 +57,7 @@ Things that trip people up:
 
 ### Ways to summarize a recording (`reduce`)
 
-`nt4_watch` and `nt4_capture_query` do the math, so the assistant does not read hundreds of raw numbers. Just ask in plain words.
+`nt4_watch` and `nt4_capture_query` do the math, so the assistant does not read hundreds of raw numbers.
 
 | `reduce` | Good for | You get back |
 |---|---|---|
@@ -71,8 +71,10 @@ Things that trip people up:
 | `percentiles` | "How steady is it? Worst case?" | `min`, `p50`, `p95`, `p99`, `max` |
 | `rate` | "How fast did it move?" | units per second, and the fastest rise and fall with when |
 | `step_response` | "Did it overshoot after the setpoint changed?" | `overshoot_pct`, `rise_ms`, `settle_ms` |
+| `peaks` | "Worst spikes and dips?" | `median`, up to 5 `high` peaks above it and 5 `low` valleys below it (a reverse spin is a valley), as `[ms, value]` |
+| `buckets` | "Shape of the whole run?" | min, max, sample mean per time slice; spikes are kept |
 
-`p50` is the typical value. `p95` and `p99` are the bad moments. `percentiles`, `rate` and `step_response` need number topics; for a struct, name the field (`fields=["vx"]`).
+`p50` is the typical value. `p95` and `p99` are the bad moments. `percentiles`, `rate`, `step_response`, `peaks` and `buckets` need number topics; for a struct, name the field (`fields=["vx"]`).
 
 For `step_response`, ask about the **measurement** (arm angle, shooter speed), over a window that **starts at the setpoint change**. It measures against where the signal settled, not where it was told to go. To check that, compare `final` with the setpoint topic. If the signal is still moving at the end, you get `settled: false`: record longer.
 
@@ -86,7 +88,7 @@ For `step_response`, ask about the **measurement** (arm angle, shooter speed), o
 
 **Catch a brief moment.** A capture can stop shortly after a condition happens and keep the lead-up (a *trigger*), or count each time something happens without keeping every sample (an *event rule*): "Record the elevator current. When it goes above 40 A, keep recording 2 more seconds, then show me the data around that moment." "Count every time the intake sensor turns true in the next 60 seconds."
 
-**Debug a mechanism.** "The elevator isn't moving. Find its topics and tell me what you can and can't tell." Or: "Who publishes /Tunables/Testing/ShooterRPS and who reads it?" A correlation (two things moving together) is a clue, not proof of the cause.
+**Debug a mechanism.** "The elevator isn't moving. Find its topics and tell me what you can and can't tell." Or: "Who publishes /Tunables/Testing/ShooterRPS and who reads it?"
 
 ## Captures and watches
 
@@ -122,4 +124,4 @@ Writing can move a real robot, so the server only reads until you turn it on, an
 | Writes refused | Writing is off by default. See [SETTINGS: Safety](SETTINGS.md#safety) |
 | A capture shows about 10 Hz | You asked for a rate. Use `all_changes=true` for fast signals |
 
-Tip: look at what the tool returned, not just the assistant's summary. How the server is built: [ARCHITECTURE](ARCHITECTURE.md).
+How the server is built: [ARCHITECTURE](ARCHITECTURE.md).

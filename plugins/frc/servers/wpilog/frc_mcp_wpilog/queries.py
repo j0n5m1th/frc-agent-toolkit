@@ -6,10 +6,10 @@ origin (see `timeline.py`). The questions live in `windows.py`, `reduce_queries.
 """
 
 from .diff_queries import diff
-from .reduce_queries import compare, expand_topics, query, values_at
+from .reduce_queries import by_mode, compare, expand_topics, query, values_at
 from .text_queries import search_text
 from .when_queries import when
 from .windows import FIND_NAMES_HINT, NOT_IN_LOG, QuerySpec, Range, aligned
 
-__all__ = ["FIND_NAMES_HINT", "NOT_IN_LOG", "QuerySpec", "Range", "aligned", "compare", "diff", "expand_topics", "query",
+__all__ = ["by_mode", "FIND_NAMES_HINT", "NOT_IN_LOG", "QuerySpec", "Range", "aligned", "compare", "diff", "expand_topics", "query",
            "search_text", "values_at", "when"]

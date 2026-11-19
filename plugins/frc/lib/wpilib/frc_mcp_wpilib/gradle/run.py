@@ -132,6 +132,7 @@ class GradleRun:
     def _on_timeout(self) -> None:
         if self.active:
             self.end_reason = "timed_out"
+            self.console.ending = True
             if self.pid:  # taskkill blocks, so keep it off the event loop
                 self._kill = asyncio.create_task(asyncio.to_thread(kill_tree_sync, self.pid))
 
@@ -152,6 +153,7 @@ class GradleRun:
         """End the process tree and wait for the console to finish. A run that already ended is left as it is."""
         if self.active:
             self.end_reason = "stopped"
+            self.console.ending = True
         if self.pid and not self._ended.is_set():
             await asyncio.to_thread(kill_tree_sync, self.pid)
             try:

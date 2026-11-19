@@ -4,7 +4,12 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
-Nothing yet.
+- `wpilog_scan`: one call that checks a log for the usual trouble (errors, loop overruns, battery sag and brownouts, packet loss and CAN use, signals that stopped) and returns ranked `flags`, saying what it could not check. The `scan_match` prompt uses it.
+- New `reduce` values on both servers: `peaks` (biggest spikes and dips, one per event) and `buckets` (min, max and mean per time slice, so spikes survive).
+- `wpilog_query by_mode=true` (one answer per enabled period), `wpilog_when sample=[...]` (other topics at the start of each stretch) and `a|b` in `name_contains` for topic and text searches.
+- `peaks` reports the `median` and lists `high` (above it) and `low` (valleys, below it), so reverse spins and sparse data read correctly. `wpilog_scan` calls many signals stopping together a low flag (a finished test sequence), not one fault each. `nt4_inspect` with no arguments lists the clients. `sim_stop` and the time limit mark a non-zero exit code as expected and do not count shutdown error lines.
+- The reply ceiling was re-checked on a 570-topic synthetic log: kept at 12000 characters.
+- Not done: opening `.hoot` straight from `wpilog_open` (a read tool would have to run Owlet, and servers must not import each other) and a second readable log folder in the plugin (a safety decision for the maintainer).
 
 ## [0.1.0] - not yet released
 
@@ -16,7 +21,7 @@ What it can do:
 - Safety and size: read-only by default, short tool descriptions, a core toolset, a `check` command, prompts and resources.
 - Log server: reads `.wpilog` files and Driver Station logs with the same reducers, finds when a condition held, compares logs, and lines up several logs on one clock.
 - Practice robot and practice log (`demo robot`, `demo log`) for learning without hardware.
-- Fourteen skills for students, from `frc-start-here` (where to begin) to task skills such as `wpilib-project`, `wpilib-live`, `wpilib-log-analysis`, `systemcore`, `systemcore-live` and `ctre-diagnose`.
+- Eighteen skills for students, from `frc-start-here` (where to begin) to task skills such as `wpilib-project`, `wpilib-live`, `wpilib-log-analysis`, `systemcore`, `systemcore-live` and `ctre-diagnose`. New since the first draft: `wpilib-prematch` (read-only pit check), `wpilib-triage` (log to a one-page "fix first" report), `wpilib-tune` (measure a loop with `step_response` and `peaks`) and `frc-explain` (explains a result in plain words and asks one question).
 - WPILib 2027 (alpha-8) support: `wpilib-project/references/2027.md` (renames and removals, OpModes, Commands v3, Telemetry and Tunables, gamepads, simulation); `wpilib-build` and `wpilib-live` know the Java 25 and import rules; the WPILib install folder on Linux also looks in `$XDG_DATA_HOME/wpilib`
 - `sim_start` uses the Gradle `run` task by default for a 2027 project and refuses `simulateJava` there, because GradleRIO 2027 made `simulateJava` fail on purpose (checked on a real alpha-8 project)
 - `systemcore-live` reads a real Systemcore's health (`/sys`), CAN buses, robot-code state and alerts from its private NT4 server on port 6810, with no SSH (seen on a real Systemcore). The NT4 server never writes to that port, even with the write settings on

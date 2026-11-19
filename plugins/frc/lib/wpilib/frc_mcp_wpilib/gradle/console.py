@@ -44,6 +44,8 @@ class Console:
         self._next_seq = 1
         self.errors = 0
         self.warnings = 0
+        self.ending = False  # set when this server is stopping the run: an error line after that is the tool being killed, not a fault
+        self.errors_at_end = 0  # those lines (still readable in the console), kept out of `errors`
         self.starting_seen = False
         self.ready = False
         self.datalog: str | None = None
@@ -56,7 +58,10 @@ class Console:
         line = Line(self._next_seq, text, level)
         self._next_seq += 1
         self._lines.append(line)
-        self.errors += level == "error"
+        if level == "error" and self.ending:
+            self.errors_at_end += 1
+        else:
+            self.errors += level == "error"
         self.warnings += level == "warn"
         if STARTING_MARKER in text:
             self.starting_seen = True

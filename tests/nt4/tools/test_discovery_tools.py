@@ -126,3 +126,13 @@ async def test_list_topics_pages_through_fake_session(fake):
     fake.topics = [topic(f"/a/{i}") for i in range(5)]
     text = (await td.nt4_list_topics(prefix="/a", limit=2)).content[0].text
     assert '"total":5' in text and '"next_offset":2' in text
+
+
+async def test_inspect_with_nothing_asked_lists_the_clients(fake):
+    fake.rows["$clients"] = [{"client": ""}, {"client": "dash@1"}]
+    assert '"n":2' in (await td.nt4_inspect()).content[0].text
+
+
+async def test_inspect_with_a_target_but_no_kind_names_the_choices(fake):
+    with pytest.raises(ToolError, match="what=subscribers or publishers"):
+        await td.nt4_inspect(target="/a")

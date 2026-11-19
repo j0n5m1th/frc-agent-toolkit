@@ -9,6 +9,15 @@ from ..reduce.types import Reduce
 from ..values import DEFAULT_PRECISION
 
 
+def contains_any(needle: str, text: str) -> bool:
+    """True if `text` holds `needle` (any case); `a|b` is true when it holds either part. A needle with a space beside a `|` is searched as written."""
+    low = text.lower()
+    if "|" in needle and any(part != part.strip() for part in needle.split("|")):
+        return needle.lower() in low
+    parts = [p for p in needle.lower().split("|") if p]
+    return not parts or any(part in low for part in parts)
+
+
 @dataclass(frozen=True)
 class TopicMatch:
     """The topic-listing filters both servers have: where names start, what they contain, which type, and whether to show hidden topics.
@@ -23,7 +32,7 @@ class TopicMatch:
 
     def name_matches(self, name: str) -> bool:
         """True if `name` contains `name_contains` (any case), or none was given."""
-        return not self.name_contains or self.name_contains.lower() in name.lower()
+        return not self.name_contains or contains_any(self.name_contains, name)
 
     def type_matches(self, type_str: str) -> bool:
         """True if `type_str` is the wanted type, or none was given."""
