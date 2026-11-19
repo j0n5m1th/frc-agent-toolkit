@@ -8,6 +8,7 @@ Use the narrowest tool that answers the question.
 - Long recordings: `nt4_capture_start`, then `nt4_capture_query`. Pass `log=true` to `nt4_capture_start` to also save a .wpilog.
 - Who owns a topic: `nt4_inspect`.
 - Fast signals: pass `all_changes=true` and relay any gap warnings.
+- Worst moments: `reduce=peaks`. Shape of a long run: `reduce=buckets`. Tuning a loop: `wpilib-tune`.
 
 ## Writes
 

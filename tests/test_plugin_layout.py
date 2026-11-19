@@ -115,7 +115,7 @@ def test_the_repo_does_not_load_the_plugin_servers_as_project_servers():
     assert not settings.exists() or "mcpServers" not in settings.read_text(encoding="utf-8")
 
 
-SKILL_NAMES = {"frc-start-here", "systemcore", "systemcore-live", "systemcore-restart", "systemcore-provision", "ctre-diagnose", "ctre-convert", "ctre-canivore",
+SKILL_NAMES = {"frc-explain", "wpilib-prematch", "wpilib-triage", "wpilib-tune", "frc-start-here", "systemcore", "systemcore-live", "systemcore-restart", "systemcore-provision", "ctre-diagnose", "ctre-convert", "ctre-canivore",
                "wpilib-build", "wpilib-deploy", "wpilib-project", "wpilib-live", "wpilib-log-analysis", "wpilib-profile"}
 GATED = {"systemcore-restart", "systemcore-provision", "ctre-canivore", "wpilib-deploy"}  # side effects: the model may not start these alone
 
@@ -125,8 +125,8 @@ def frontmatter(skill: Path) -> dict[str, str]:
     return dict(line.split(": ", 1) for line in block.splitlines())
 
 
-def test_the_plugin_has_exactly_these_fourteen_skills():
-    assert {skill.name for skill in SKILLS} == SKILL_NAMES and len(SKILLS) == 14
+def test_the_plugin_has_exactly_these_eighteen_skills():
+    assert {skill.name for skill in SKILLS} == SKILL_NAMES and len(SKILLS) == 18
 
 
 def test_exactly_the_four_side_effect_skills_are_hidden_from_the_model():
@@ -157,6 +157,9 @@ def test_skills_name_only_real_server_keys():
         for prefix in re.findall(r"mcp__(?:plugin_frc-toolkit_)?([\w-]+?)__", text):
             assert prefix in keys, (skill.name, prefix)
         assert not re.search(r"wpilib-(nt4|wpilog|vscode)\b|wpilib-sim(?!-check)|plugin_frc-toolkit_wpilib", text), skill.name
+        if skill.name == "frc-explain":  # it explains what the conversation already holds, so it needs no server
+            assert "Needs no server" in text
+            continue
         if skill.name == "frc-start-here":  # it surveys every server, so it says which to switch on instead of stopping
             assert "`/mcp`" in text and {"vscode", "wpilog", "sim", "nt4", "ctre-tools"} <= set(re.findall(r"`([\w-]+)`", text))
             continue
