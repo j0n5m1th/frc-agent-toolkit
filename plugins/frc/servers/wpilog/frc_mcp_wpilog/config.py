@@ -34,8 +34,7 @@ OUTSIDE = Capability("WPILOG_ALLOW_OUTSIDE", "Reading logs outside the project f
 TOOLSET = Toolset("WPILOG_TOOLSET", WPILogError)  # read it with TOOLSET.current(); `create_server` makes the server's apply_toolset from it
 
 
-# What to do about a log the server may not read. The plugin allows only the project folder and its user cannot change that, so
-# they copy the file in; someone running the server themselves can name more folders.
+# What to do about a log the server may not read: copy it in, or (plugin) turn on reading other folders; a person running the server names more folders.
 HOW_TO_ALLOW = "Copy the file into the project folder, or turn on \"Read logs from other folders\" in the plugin. (If you run the server yourself, add its folder to WPILOG_DIR or set WPILOG_ALLOW_OUTSIDE=1.)"
 HOW_TO_FIND = "Put the logs in the project folder. (If you run the server yourself, set WPILOG_DIR to the folder that has them.)"
 
@@ -66,7 +65,8 @@ def search_roots(folder: str | None) -> list[Path]:
     roots = log_roots()
     if not folder:
         return roots
-    chosen = Path(folder).expanduser().resolve()
+    given = Path(folder).expanduser()
+    chosen = (given if given.is_absolute() else roots[0] / given).resolve()  # a relative folder is under the project, as the plugin's hook reads it
     if not chosen.is_dir():
         raise WPILogError(f"{folder!r} is not a folder.")
     if not inside(chosen, roots):
@@ -118,8 +118,13 @@ def resolve_log(name: str) -> Path:
         matches, outside = matches + outside, []
     if dslog.is_ds(given):  # either file of a session opens the session; its other file is judged too (it may be a link out)
         canonical = [dslog.canonical(m).resolve() for m in matches]
-        # every file the session reads (the .dslog AND the .dsevents) must resolve inside the folders, not only the one named
-        safe = [c for c in canonical if OUTSIDE.enabled() or all(inside(f.resolve(), roots) for f in dslog.pair(c) if f is not None)]
+        # every file the session reads (the .dslog AND the .dsevents) must resolve inside the folders, or (with the setting) beside the named one:
+        # a link out of the folder is never followed, so a planted .dsevents cannot lead somewhere the person was not asked about
+        def together(c: Path) -> bool:
+            files = [f.resolve() for f in dslog.pair(c) if f is not None]
+            return all(inside(f, roots) for f in files) or (OUTSIDE.enabled() and all(f.parent == c.parent for f in files))
+
+        safe = [c for c in canonical if together(c)]
         matches, outside = safe, outside + [c for c in canonical if c not in safe]
     if outside:
         raise WPILogError(f"{name!r} is outside the folders this server may read ({where}). {HOW_TO_ALLOW}")
@@ -128,5 +133,7 @@ def resolve_log(name: str) -> Path:
         raise WPILogError(f"No log named {name!r} under {where}. Use wpilog_list to see the logs.")
     if len(unique) > 1:
         raise WPILogError(f"{name!r} matches {len(unique)} logs; give a longer path: " + ", ".join(str(p) for p in unique[:3]))
+    if not _is_log(unique[0].name):  # a link named like a log may point at some other file
+        raise WPILogError(f"{name!r} leads to {unique[0].name}, which is not a log file.")
     check_size(unique[0], max_log_bytes(), "WPILOG_MAX_MB", WPILogError, "open this log")
     return unique[0]

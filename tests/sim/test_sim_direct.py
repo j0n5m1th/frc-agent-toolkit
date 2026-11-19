@@ -6,6 +6,7 @@ import json
 import pytest
 
 from frc_mcp_sim.run import SimRun
+from frc_mcp_sim.session import session
 from frc_mcp_sim.tools.console_tools import sim_output, sim_status
 from frc_mcp_sim.tools.run_tools import sim_start, sim_stop
 
@@ -73,7 +74,7 @@ async def test_wait_port_closed_gives_up_on_a_port_that_stays_open():
         server.close()
 
 
-def test_error_lines_after_a_stop_are_not_counted_as_the_sims_errors(project):
+def test_error_lines_after_a_stop_are_not_counted_as_the_sims_errors(project, monkeypatch):
     run = SimRun(project, "simulateJava", [])
     run._on_line("ERROR: a real fault while running")
     run.console.ending = True  # what stop() and the time limit set before they kill the process
@@ -82,9 +83,6 @@ def test_error_lines_after_a_stop_are_not_counted_as_the_sims_errors(project):
     run._on_line("Exception in thread main java.lang.IllegalStateException")  # a real error while stopping
     assert run.console.errors_at_end == 1
     run.end_reason, run.exit_code = "stopped", 1
-    from frc_mcp_sim.session import session
-
-    session.run = run
+    monkeypatch.setattr(session, "run", run)
     out = asyncio.run(session.status())
     assert out["errors"] == 1 and out["errors_at_stop"] == 1 and "exit_expected" in out
-    session.run = None

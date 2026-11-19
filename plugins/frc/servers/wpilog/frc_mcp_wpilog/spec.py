@@ -14,8 +14,8 @@ from . import config
 
 def server_instructions(core: bool) -> str:
     return (
-        "Recorded robot logs (.wpilog, Driver Station): what happened in a match, past values, faults. Live values: use nt4. Read-only; only files under WPILOG_DIR. Start: wpilog_list, wpilog_scan." if core else
-        "Recorded robot logs (.wpilog, Driver Station): what happened in a match, past values, faults; wpilog_diff compares two logs. Live values: use nt4. Read-only; only files under WPILOG_DIR. Start: wpilog_list, wpilog_scan."
+        "Recorded robot logs (.wpilog, Driver Station): what happened in a match, past values, faults. Live values: use nt4. Read-only; logs under WPILOG_DIR, elsewhere only after you confirm. Start: wpilog_list, wpilog_scan." if core else
+        "Recorded robot logs (.wpilog, Driver Station): what happened in a match, past values, faults; wpilog_diff compares two logs. Live values: use nt4. Read-only; logs under WPILOG_DIR, elsewhere only after you confirm. Start: wpilog_list, wpilog_scan."
     )
 
 

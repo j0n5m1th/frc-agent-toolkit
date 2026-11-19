@@ -4,10 +4,11 @@ Pure functions over already-read values, so they are tested without a network. T
 lists (seen on a real Systemcore, image alpha18). The limits are rules of thumb, not WPILib or vendor figures.
 """
 
+import math
 from typing import Any
 
 SYS, CANBUS, DIAGNOSTICS, STATUS, ALERTS = "/sys/", "/canbus/", "/diagnostics/", "/Netcomm/Status/", "/Netcomm/Alerts/"
-PREFIXES = (SYS, CANBUS, DIAGNOSTICS, STATUS, ALERTS)
+PREFIXES = (ALERTS, STATUS, SYS, CANBUS, DIAGNOSTICS)  # alerts first, so a cap on topics never hides one
 MAX_TOPICS = 150  # read at most this many topics in one call
 MAX_ALERTS = 5
 BROWNOUT_VOLTS, LOW_VOLTS = 7.0, 11.5  # below the first the roboRIO-class controllers brown out; the second is a low resting battery
@@ -41,7 +42,7 @@ def _alert_parts(name: str) -> tuple[str, int | None]:
 def active_alerts(values: dict[str, Any]) -> list[str]:
     """The base paths of the alerts that are on, most severe first."""
     on = [_alert_parts(n) for n, v in values.items() if n.startswith(ALERTS) and n.endswith("/active") and is_on(v)]
-    return [base for base, level in sorted(on, key=lambda a: (9 if a[1] is None else a[1], a[0]))][:MAX_ALERTS]
+    return [base for base, level in sorted(on, key=lambda a: (9 if a[1] is None else a[1], a[0]))]
 
 
 def assess(values: dict[str, Any], texts: dict[str, str]) -> dict[str, Any]:
@@ -92,13 +93,15 @@ def assess(values: dict[str, Any], texts: dict[str, str]) -> dict[str, Any]:
         for bus, fields in sorted(buses.items()):
             if is_on(fields.get("error")):
                 flags.append(f"med: CAN bus {bus} reports an error")
+            if "up" in fields and not is_on(fields["up"]):
+                flags.append(f"low: CAN bus {bus} is not up (unused, or down)")
     util = values.get(DIAGNOSTICS + "canbusutil")
     if isinstance(util, (list, tuple)) and util:
         # seen on a real Systemcore (image alpha18): two numbers per bus, the percent first and the same use as a fraction second
-        per_bus = [round(float(u), 1) for u in util[0::2]]
+        per_bus = [round(n, 1) if (n := _number(u)) is not None and math.isfinite(n) else None for u in util[0::2]]
         controller["can_util_pct"] = per_bus
-        if max(per_bus) > CAN_BUSY_PCT:
-            flags.append(f"med: CAN bus use is {max(per_bus):.0f}% on bus s{per_bus.index(max(per_bus))}")
+        if (known := [(n, i) for i, n in enumerate(per_bus) if n is not None]) and max(known)[0] > CAN_BUSY_PCT:
+            flags.append(f"med: CAN bus use is {max(known)[0]:.0f}% on bus s{max(known)[1]}")
     if (health := values.get(DIAGNOSTICS + "canbushealth")) is not None:
         controller["can_health"] = health  # meaning not documented here, so shown as read
     code = {key: is_on(values[STATUS + name]) for key, name in (("running", "HasUserCode"), ("ready", "HasUserCodeReady")) if STATUS + name in values}
@@ -108,8 +111,11 @@ def assess(values: dict[str, Any], texts: dict[str, str]) -> dict[str, Any]:
             flags.append("high: no robot code is running")
         elif code.get("ready") is False:
             flags.append("med: robot code is running but not ready")
+    active = active_alerts(values)
+    if len(active) > MAX_ALERTS:
+        flags.append(f"low: {len(active)} alerts are active; the first {MAX_ALERTS} are shown")
     alerts = []
-    for base in active_alerts(values):
+    for base in active[:MAX_ALERTS]:
         number = _alert_parts(base)[1]
         level = LEVELS.get(number, "low") if number is not None else "low"  # level 0 is high, so test for None, not falsy
         text = texts.get(base) or base.removeprefix(ALERTS)

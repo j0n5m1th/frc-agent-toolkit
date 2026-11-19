@@ -10,11 +10,11 @@ from ..values import DEFAULT_PRECISION
 
 
 def contains_any(needle: str, text: str) -> bool:
-    """True if `text` holds `needle` (any case); `a|b` is true when it holds either part. A needle with a space beside a `|` is searched as written."""
+    """True if `text` holds `needle` (any case); `a|b` is true when it holds either part (spaces beside the bar are ignored)."""
     low = text.lower()
-    if "|" in needle and any(part != part.strip() for part in needle.split("|")):
-        return needle.lower() in low
-    parts = [p for p in needle.lower().split("|") if p]
+    if "|" not in needle:
+        return needle.lower() in low  # a plain needle is matched as written, spaces and all
+    parts = [p.strip() for p in needle.lower().split("|") if p.strip()]
     return not parts or any(part in low for part in parts)
 
 

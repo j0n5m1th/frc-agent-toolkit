@@ -34,28 +34,28 @@
    "gates-off": {
     "tools": 11,
     "names": 124,
-    "defs": 2566,
-    "instructions": 55
+    "defs": 2574,
+    "instructions": 62
    },
    "gates-on": {
     "tools": 11,
     "names": 124,
-    "defs": 2566,
-    "instructions": 55
+    "defs": 2574,
+    "instructions": 62
    }
   },
   "core": {
    "gates-off": {
     "tools": 8,
     "names": 91,
-    "defs": 2101,
-    "instructions": 47
+    "defs": 2109,
+    "instructions": 54
    },
    "gates-on": {
     "tools": 8,
     "names": 91,
-    "defs": 2101,
-    "instructions": 47
+    "defs": 2109,
+    "instructions": 54
    }
   }
  },

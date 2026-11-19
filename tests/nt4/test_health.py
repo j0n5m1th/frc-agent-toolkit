@@ -50,3 +50,17 @@ def test_a_server_without_sys_topics_is_not_checked_and_says_how_to_connect():
 def test_text_flags_read_as_off_when_empty_or_false():
     assert assess({**HEALTHY, "/sys/brownout": "false"}, {})["flags"] == ["none found by these checks"]
     assert assess({**HEALTHY, "/sys/brownout": "true"}, {})["flags"][0].startswith("high")
+
+
+def test_a_bus_that_is_not_up_is_flagged_low_and_alerts_beyond_five_are_counted():
+    values = {**HEALTHY, "/canbus/s3/up": False, "/canbus/s3/error": ""}
+    assert any(f.startswith("low: CAN bus s3 is not up") for f in assess(values, {})["flags"])
+    many = {**HEALTHY, **{f"{ALERTS}G/1/a{n}/active": 1 for n in range(8)}}
+    out = assess(many, {})
+    assert len(out["alerts"]) == 5 and any("8 alerts are active; the first 5" in f for f in out["flags"])
+
+
+def test_bad_can_use_values_are_skipped_not_fatal():
+    out = assess({**HEALTHY, "/diagnostics/canbusutil": [None, 0.1, "n/a", 0.0, float("nan"), 0.0, 85.0, 0.85]}, {})
+    assert out["controller"]["can_util_pct"] == [None, None, None, 85.0]
+    assert any("CAN bus use is 85% on bus s3" in f for f in out["flags"])

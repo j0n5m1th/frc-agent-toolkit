@@ -7,7 +7,7 @@ from frc_mcp_core.reply import reply
 from ..access.reading import Observed
 from ..access.topic_listing import TopicFilter
 from ..app import READ_ONLY, mcp, tool_errors
-from ..health import ALERTS, MAX_TOPICS, PREFIXES, active_alerts, assess
+from ..health import ALERTS, MAX_ALERTS, MAX_TOPICS, PREFIXES, active_alerts, assess
 from ..session import session
 
 READ_WAIT_S = 2.0
@@ -25,7 +25,11 @@ async def nt4_health() -> ToolResult:
         got = await session.get_values(names[:MAX_TOPICS], timeout_s=READ_WAIT_S)
         values = {name: seen.plain for name, seen in got.items() if isinstance(seen, Observed)}
         texts: dict[str, str] = {}
-        if bases := active_alerts(values):
+        if bases := active_alerts(values)[:MAX_ALERTS]:
             read = await session.get_values([base + "/text" for base in bases], timeout_s=READ_WAIT_S)
             texts = {name.removesuffix("/text"): str(seen.plain) for name, seen in read.items() if isinstance(seen, Observed)}
-        return reply(assess(values, texts))
+        out = assess(values, texts)
+        if cut := len(names) - MAX_TOPICS:
+            out["topics_not_read"] = cut
+            out["flags"] = [*(f for f in out["flags"] if not f.startswith("none found")), f"low: {cut} topics were not read (limit {MAX_TOPICS}); the checks above may be incomplete"]
+        return reply(out)

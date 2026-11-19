@@ -243,6 +243,39 @@ def test_buckets_name_the_unweighted_mean_as_such():
     assert "sample_mean" in out and "mean" not in out
 
 
-def test_a_space_beside_the_bar_makes_it_literal():
-    assert contains_any("state | a", "Robot state | auto") and not contains_any("state | a", "state")
-    assert contains_any("arm|elev", "elevator")
+def test_spaces_beside_the_bar_are_ignored_and_a_plain_needle_is_kept_as_written():
+    assert contains_any("error | exception", "Exception in thread") and contains_any("battery |voltage", "BatteryVoltage")
+    assert contains_any("arm|elev", "elevator") and not contains_any("arm|elev", "drive")
+    assert contains_any("state ", "robot state ok") and not contains_any("state ", "robot state")  # no bar: spaces count
+    assert contains_any("|", "anything") and contains_any("a|", "abc")
+
+
+async def test_a_unitless_percent_below_one_is_not_scaled_but_a_systemstats_fraction_is(log_dir):
+    w = LogWriter()
+    cpu = w.start("NT:/DSLog/CPUUtilization", "double", "", BASE)  # percent, no unit: 0.9 means 0.9 %
+    for n in range(10):
+        w.append(cpu, 0.9, at(n))
+    w.save(log_dir / "pct.wpilog")
+    await file_tools.wpilog_open("pct.wpilog")
+    out = text(await data_tools.wpilog_scan())
+    assert out["link"]["cpu_pct"] == 0.9 and not any("cpu_pct" in f for f in out["flags"])
+
+
+async def test_a_zero_volt_stretch_is_not_counted_as_sag(log_dir):
+    w = LogWriter()
+    battery = w.start("NT:/SystemStats/BatteryVoltage", "double", '{"unit":"V"}', BASE)
+    for t, v in ((0, 12.0), (2, 9.0), (3, 0.0), (9, 12.0)):
+        w.append(battery, v, at(t))
+    w.save(log_dir / "gap.wpilog")
+    await file_tools.wpilog_open("gap.wpilog")
+    assert text(await data_tools.wpilog_scan())["battery"]["below_10v_s"] == pytest.approx(1.0, abs=0.01)  # the 9 V second, not the 6 s at 0 V
+
+
+async def test_when_sample_checks_its_names_even_for_a_window_past_the_end(log_dir):
+    from fastmcp.exceptions import ToolError
+
+    await file_tools.wpilog_open("sample.wpilog")
+    with pytest.raises(ToolError):
+        await data_tools.wpilog_when(ELEVATOR, ">", 40, since_ms=10_000_000, sample=["/nope"])
+    out = text(await data_tools.wpilog_when(ELEVATOR, ">", 40, since_ms=10_000_000, sample=["/Fake/Arm/Angle"]))
+    assert out["n"] == 0 and out["sampled"] == {"/Fake/Arm/Angle": []}

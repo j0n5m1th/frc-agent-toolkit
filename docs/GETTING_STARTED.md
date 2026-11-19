@@ -72,7 +72,7 @@ Plugin servers start on. Each one that is on costs tokens in every session. A se
 | Writing code, no robot | `vscode` | 104 | 575 / 246 |
 | Simulator | `sim`, `nt4` | 96 + 179 | 417 / 268 and 3,265 / 2,032 |
 | On the bench with the robot | `nt4`, `systemcore`, `ctre-diag` | 179 + 227 + 129 | 3,265 / 2,032, 1,270 / 1,051 and 651 / 438 |
-| After a match, with logs | `wpilog`, `ctre-owlet` | 179 + 97 | 2,566 / 2,101 and 475 |
+| After a match, with logs | `wpilog`, `ctre-owlet` | 186 + 97 | 2,574 / 2,109 and 475 |
 | CTRE devices | `ctre-tools`, `ctre-diag`, `ctre-caniv`, `ctre-passerine` | 71 + 129 + 102 + 69 | 229, 651 / 438, 318 and 197 |
 | Profiling Java | `jfr` | 122 | 1,018 / 872 |
 

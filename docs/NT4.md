@@ -72,7 +72,7 @@ Things that trip people up:
 | `percentiles` | "How steady is it? Worst case?" | `min`, `p50`, `p95`, `p99`, `max` |
 | `rate` | "How fast did it move?" | units per second, and the fastest rise and fall with when |
 | `step_response` | "Did it overshoot after the setpoint changed?" | `overshoot_pct`, `rise_ms`, `settle_ms` |
-| `peaks` | "Worst spikes and dips?" | `median`, up to 5 `high` peaks above it and 5 `low` valleys below it (a reverse spin is a valley), as `[ms, value]` |
+| `peaks` | "Worst spikes and dips?" | `median`, up to 5 `high` peaks above it and 5 `low` valleys below it (reverse spin: valley), as `[ms, value]`, 0.5 s apart |
 | `buckets` | "Shape of the whole run?" | min, max, sample mean per time slice; spikes are kept |
 
 `p50` is the typical value. `p95` and `p99` are the bad moments. `percentiles`, `rate`, `step_response`, `peaks` and `buckets` need number topics; for a struct, name the field (`fields=["vx"]`).

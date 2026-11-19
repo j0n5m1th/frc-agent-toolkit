@@ -138,7 +138,8 @@ def when(
     log.rows([c.topic for c in clauses])  # one pass over the file for every topic the clauses read (the reads below hit the cache)
     log_end_ms = (log.end_us - origin) / US_PER_MS
     if window.since_ms is not None and window.since_ms > log_end_ms:  # the window opens after the last record: nothing was recorded
-        return {"n": 0, "changes_ms": []} if op == "changed" else {"n": 0, "total_ms": 0.0, "intervals_ms": []}
+        empty = {"n": 0, "changes_ms": []} if op == "changed" else {"n": 0, "total_ms": 0.0, "intervals_ms": []}
+        return _with_samples(log, empty, [], sample, origin)  # still checks the names
     end_ms = log_end_ms if window.until_ms is None else min(window.until_ms, log_end_ms)  # a value holds only as long as the log
     if op == "changed":
         changed = _changes(_window_rows(log, name, window, origin), max_intervals)

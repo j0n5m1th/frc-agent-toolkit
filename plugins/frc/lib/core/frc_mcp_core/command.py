@@ -93,13 +93,15 @@ def _ask_outside(reason: str) -> int:
         target = tool_input.get("path") or tool_input.get("folder")
         if not target:
             return 0  # nothing to read elsewhere (a bare `wpilog_list`)
+        if str(target).startswith(("\\\\", "//")):  # a network share: ask before anything touches the network (resolving it would)
+            return _ask(f"{reason} ({target})")
         project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or payload["cwd"]).resolve()
         given = Path(str(target)).expanduser()
         resolved = (given if given.is_absolute() else project / given).resolve()
         if resolved.is_relative_to(project):
             return 0
         return _ask(f"{reason} ({resolved})")
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+    except Exception:  # noqa: BLE001 - whatever went wrong, the person is asked: this check never lets a call through unread
         return _ask(reason)
 
 

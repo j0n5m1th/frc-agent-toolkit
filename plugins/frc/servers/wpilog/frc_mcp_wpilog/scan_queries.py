@@ -26,7 +26,7 @@ MANY_STOPPED = 5  # this many signals stopping early is read as one cause, not s
 MANY_ENABLES = 6  # more enabled periods than this in one log is worth a look
 MAX_EXAMPLES = 3
 LINK = (("packet_loss_pct", ("packetloss",), 5.0), ("trip_ms", ("tripti",), 100.0), ("can_util_pct", ("can", "util"), 80.0), ("cpu_pct", ("cpu", "util"), 90.0))
-FRACTION_LABELS = ("can_util_pct", "cpu_pct")  # SystemStats and AdvantageKit publish these as 0-1 fractions, the Driver Station log as percent
+FRACTION_LABELS = ("can_util_pct", "cpu_pct")  # a SystemStats topic may be a 0-1 fraction (assumed, not seen on a real match log); the Driver Station log is percent
 _NUMBER = re.compile(r"\d+(\.\d+)?")
 _ERROR_WORD = re.compile(r"\b(?:error|fault|exception)s?\b")  # whole words: "default" is not a fault
 
@@ -108,11 +108,12 @@ def _battery(end_us: int, rows: TopicRows, battery: Topic | None, browned: list[
     flags: list[str] = []
     out: dict[str, Any] = {}
     if battery:
-        readings = [(t, v) for t, v in _numbers(rows, battery) if float(v) > 0]  # 0 V is no battery (bench or simulation), not a brownout
+        every = _numbers(rows, battery)
+        readings = [(t, v) for t, v in every if float(v) > 0]  # 0 V is no battery (bench or simulation), not a brownout
         if readings:
             at_us, low = min(readings, key=lambda r: r[1])
             at = round((at_us - origin) / US_PER_S, 1)
-            under, brown = _held_s(readings, end_us, lambda v: v < LOW_VOLTS, lambda v: v < BROWNOUT_VOLTS)
+            under, brown = _held_s(every, end_us, lambda v: 0 < v < LOW_VOLTS, lambda v: 0 < v < BROWNOUT_VOLTS)  # a 0 V stretch is not sag
             out["battery"] = {"topic": battery.name, "min_v": round(low, 2), "min_at_s": at, "below_10v_s": round(under, 1), "below_7v_s": round(brown, 1)}
             if low < BROWNOUT_VOLTS:
                 flags.append(f"high: battery fell to {low:.1f} V at {at} s (the roboRIO can brown out below 7 V)")
@@ -144,8 +145,8 @@ def _link(rows: TopicRows, links: dict[str, list[Topic]]) -> tuple[dict[str, Any
         topic = links[label][0]
         if values := _numbers(rows, topic):
             peak = max(float(v) for _, v in values)
-            if label in FRACTION_LABELS and topic.unit != "%" and peak <= 1.0:
-                peak *= 100
+            if label in FRACTION_LABELS and topic.unit != "%" and peak <= 1.0 and "systemstats" in topic.name.lower():
+                peak *= 100  # only SystemStats names are read as fractions: a unit-less percent below 1 stays as logged
             out[label] = round(peak, 1)
             if peak > limit:
                 flags.append(f"med: {label} peaked at {round(peak, 1)} ({topic.name})")

@@ -216,3 +216,14 @@ def test_the_outside_hook_fails_closed_on_a_payload_it_cannot_read(monkeypatch, 
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"tool_input": {"path": "x.wpilog"}})))  # no project folder known at all
     assert command.main(["hook", "ask-outside", "Reads elsewhere. Allow it?"]) == 0
     assert json.loads(capsys.readouterr().out)["hookSpecificOutput"]["permissionDecision"] == "ask"
+
+
+def test_the_outside_hook_asks_about_a_network_share_without_touching_it(monkeypatch, capsys, tmp_path):
+    for target in ("\\\\attacker\\share\\x.wpilog", "//attacker/share/x.wpilog"):
+        out = json.loads(run_outside_hook(monkeypatch, capsys, {"tool_input": {"path": target}}, tmp_path))["hookSpecificOutput"]
+        assert out["permissionDecision"] == "ask" and target in out["permissionDecisionReason"]
+
+
+def test_the_outside_hook_asks_when_a_path_cannot_be_resolved(monkeypatch, capsys, tmp_path):
+    out = json.loads(run_outside_hook(monkeypatch, capsys, {"tool_input": {"path": "~nosuchuser_xyz/x.wpilog"}}, tmp_path))["hookSpecificOutput"]
+    assert out["permissionDecision"] == "ask"

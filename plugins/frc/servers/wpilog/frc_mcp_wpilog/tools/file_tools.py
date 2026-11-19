@@ -28,9 +28,9 @@ from ..store import logs
 async def wpilog_list(
     name_contains: NameContains = None,
     limit: Limit = 20,
-    folder: Annotated[str | None, Field(description="Search this other folder instead (asks you first)")] = None,
+    folder: Annotated[str | None, Field(description="Another folder to search")] = None,
 ) -> ToolResult:
-    """Match logs (.wpilog and Driver Station .dslog) this server may read, newest first (name, size, date). Open one with wpilog_open. `folder` lists another folder."""
+    """Match logs (.wpilog and Driver Station .dslog) this server may read, newest first (name, size, date). Open one with wpilog_open. `folder` lists another folder (asks you first)."""
     roots = await asyncio.to_thread(config.search_roots, folder)
     found = await asyncio.to_thread(config.find_logs, roots, name_contains)
     rows = [file_row(path, [] if folder else roots) for path in found[:limit]]  # another folder's files show their full path, which wpilog_open takes
@@ -47,7 +47,7 @@ async def wpilog_list(
 @mcp.tool(annotations={**READ_ONLY_LOCAL, "title": "Open log"}, output_schema=None)
 @tool_errors
 async def wpilog_open(path: Annotated[str, Field(description="File name or path of a .wpilog or .dslog (see wpilog_list)")]) -> ToolResult:
-    """Open a log: duration, when the robot was enabled (auto/teleop/test), match info and the busiest topics. Becomes the default log. Reopening a file that changed on disk re-reads it."""
+    """Open a log: duration, when the robot was enabled (auto/teleop/test), match info and the busiest topics. Becomes the default log. Reopening a file that changed on disk re-reads it. A path outside the project asks you first."""
     resolved = config.resolve_log(path)
     log_id, log = await asyncio.to_thread(logs.open, resolved)
     return reply(await asyncio.to_thread(overview, log, log_id))

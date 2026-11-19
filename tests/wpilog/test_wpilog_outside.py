@@ -76,3 +76,61 @@ async def test_a_blank_or_bad_setting_never_turns_it_on(log_dir, usb, monkeypatc
     monkeypatch.setenv("WPILOG_ALLOW_OUTSIDE", "maybe")
     with pytest.raises(ToolError):
         await file_tools.wpilog_open(str(usb / "match.wpilog"))
+
+
+def link(target, name):
+    """A symlink, or skip when this machine does not let the test user make one."""
+    try:
+        name.symlink_to(target)
+    except OSError:
+        pytest.skip("cannot create symlinks here")
+
+
+async def test_a_relative_folder_is_under_the_project_as_the_hook_reads_it(log_dir, monkeypatch, tmp_path):
+    (log_dir / "logs").mkdir()
+    build_sample_log(log_dir / "logs" / "inner.wpilog")
+    monkeypatch.chdir(tmp_path.parent)  # a server cwd that is not the project: the relative folder must not follow it
+    out = text(await file_tools.wpilog_list(folder="logs"))
+    assert out["total"] == 1 and out["logs"][0]["file"].endswith("inner.wpilog")
+
+
+async def test_a_link_named_like_a_log_must_lead_to_a_log(log_dir, usb, monkeypatch):
+    monkeypatch.setenv("WPILOG_ALLOW_OUTSIDE", "1")
+    (usb / "secret.txt").write_text("secret", encoding="utf-8")
+    link(usb / "secret.txt", log_dir / "x.wpilog")
+    with pytest.raises(ToolError, match="not a log file"):
+        await file_tools.wpilog_open(str(log_dir / "x.wpilog"))
+
+
+async def test_a_driver_station_session_never_follows_a_link_out_of_its_folder(log_dir, usb, monkeypatch):
+    from dslog_builder import build_session
+
+    monkeypatch.setenv("WPILOG_ALLOW_OUTSIDE", "1")
+    build_session(log_dir, "match")
+    (log_dir / "match.dsevents").unlink()
+    build_session(usb, "other")
+    link(usb / "other.dsevents", log_dir / "match.dsevents")  # a planted link: the events file leads out of the project
+    with pytest.raises(ToolError, match="outside"):
+        await file_tools.wpilog_open("match.dslog")
+
+
+async def test_the_size_limit_still_applies_to_a_log_elsewhere(log_dir, usb, monkeypatch):
+    monkeypatch.setenv("WPILOG_ALLOW_OUTSIDE", "1")
+    monkeypatch.setenv("WPILOG_MAX_MB", "1")
+    (usb / "big.wpilog").write_bytes(b"\0" * (2 * 2**20))
+    with pytest.raises(ToolError, match="WPILOG_MAX_MB"):
+        await file_tools.wpilog_open(str(usb / "big.wpilog"))
+
+
+async def test_a_session_whose_other_file_is_in_another_folder_is_refused(log_dir, usb, monkeypatch):
+    """The same rule as the link test, without needing symlinks: the pair's second file must sit beside the named one."""
+    from dslog_builder import build_session
+
+    from frc_mcp_wpilog import config
+
+    monkeypatch.setenv("WPILOG_ALLOW_OUTSIDE", "1")
+    build_session(log_dir, "match")
+    build_session(usb, "other")
+    monkeypatch.setattr(config.dslog, "pair", lambda c: (c, usb / "other.dsevents"))
+    with pytest.raises(ToolError, match="outside"):
+        await file_tools.wpilog_open("match.dslog")
