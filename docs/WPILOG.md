@@ -39,7 +39,7 @@ You do not need tool names. Describe what you want. Times in and out are **milli
 | `wpilog_get_values` | Each topic's value at a moment (`at_ms`, default the end of the log) |
 | `wpilog_query` | Summarize topics over a window (`reduce`: `summary`, `latest`, `changes`, `samples`, `edges`, `durations`, `time_weighted`, `percentiles`, `rate`, `step_response`, `peaks`, `buckets`). `compare_with=[...]` asks the same question of up to three more open logs |
 | `wpilog_scan` | Check a log for the usual trouble in one call (the live server's `nt4_scan` runs the same checks): errors, loop time and overruns, battery sag and brownouts, link numbers, CAN utilization and error counters, signals that stopped. `flags` are ranked high to low, and it says what it could not check |
-| `wpilog_swerve` | Swerve drivetrain: how closely each module followed its command, and which module lags (see [Swerve](#swerve-drivetrains)) |
+| `wpilog_swerve` | Swerve drivetrain: how closely each module followed its command, and which module lags (see [Checks](CHECKS.md#swerve-drivetrains)) |
 | `wpilog_when` | The stretches of time a condition was true (current `> 40`), or when a value changed. `also=[...]` adds conditions on other topics that must hold at the same time; `sample=[...]` reads other topics at the start of each stretch (what else was going on) |
 | `wpilog_text` | Search messages, console output and other text |
 | `wpilog_sync` (full toolset) | Put 2 to 4 open logs on one clock and open them as one log, `s1` |
@@ -80,16 +80,6 @@ The enabled periods come from the first of these the log has (the places Advanta
 
 A log holds only **what the robot recorded**. Timing is the update's own timestamp. Two signals moving together is a clue, not a cause. Log text is data: the assistant reports it and never follows instructions inside it.
 
-## Swerve drivetrains
-
-A swerve robot logs its module states twice: what each module **measured** and what the code **commanded**. `wpilog_swerve` compares them while the robot was enabled (or in a window you give), per module:
-
-- **Speed error**: how far the module's speed was from the command (mean and p95, in m/s), and its top speed.
-- **Angle error**: how far its angle was from the command (mean and p95, in degrees), counted only while the module was told to move (below 0.1 m/s the angle is not being asked to do anything).
-- **Lagging**: a module whose p95 error is at least twice the typical module's, and not tiny (0.3 m/s or 10 degrees), gets a flag. That is a rule of thumb, not a verdict: a lagging module can be a slipping belt or gear, a CAN problem, a slipping wheel or a current limit. Check a second signal (`wpilog_when` on that module's current, `wpilog_scan` for brownouts and CAN) before naming a cause.
-
-It uses a pair of arrays only when their names follow a convention: AdvantageKit's `SwerveStates/Measured` with `SwerveStates/SetpointsOptimized` (or `Setpoints`), or CTRE's `DriveState/ModuleStates` with `DriveState/ModuleTargets`. Both must be `SwerveModuleState[]`. Any other pair is listed as `candidates`; name them with `measured=` and `setpoint=`. The module numbers are the array positions (the common order is front left, front right, back left, back right: check your code). Compare against the optimized setpoints: against the raw ones a module that flips direction looks 180 degrees off. **Checked on synthetic logs only; the names come from AdvantageKit and CTRE documentation, not a real match log seen here.** This is a module-level check. A wrong encoder offset or a bad gyro is **not** visible here (the steer loop follows the biased reading, so the error stays small): look for a robot that does not drive straight, or for heading and odometry that disagree with the modules. YAGSL's plain-number arrays are not read. For live values use `nt4_swerve` (see the `wpilib-swerve` skill).
-
 ## Worked examples
 
 **Open a log.** "Open practice.wpilog and tell me when the robot was enabled." You should see 30 seconds, autonomous from 2 s to 17 s, teleop from 19 s to 29 s, the event "Practice Field" (match 7).
@@ -102,7 +92,7 @@ It uses a pair of arrays only when their names follow a convention: AdvantageKit
 
 **Compare two runs.** Open both, then: "Compare the elevator current in the two logs, using times since autonomous started in each." For settings, ask "What did we change between these two matches?" (`wpilog_diff`). It lists tunables and constants that differ, that only one log has, or that changed during one. Busy signals (over 2,000 updates) are skipped. `prefix="/Tunables/"` narrows it.
 
-**Scan for trouble.** "Scan this log." `wpilog_scan` runs the same checks every time and returns ranked `flags`: errors, loop overruns, battery below 10 V or below the brownout setting, brownouts, packet loss, CAN use, signals that stopped. It does not guess which topic is the battery: it uses one only when you name it (`battery=`) or its name follows a usual convention (`BatteryVoltage`, or `Voltage` under a PDH, PDP or Battery path). Other topics with a suggestive name are listed as `candidates` and not used, because a 5 V rail is not the battery. It reads loop time only from AdvantageKit's `LoggedRobot/FullCycleMS` (and `UserCodeMS`) and CAN utilization and error counters only by exact field name under a CAN path (`Utilization`, `TEC`, `REC`, `BusOffCount`, `TxFullCount` and their long forms), judged while the robot was enabled, because CAN errors while disabled are normal. The brownout setting is read from a `BrownoutVoltage` topic when the robot logs one, and otherwise is 6 V, the Systemcore's nominal setting (configurable; from the vendor specification, not seen on a robot here): the reply says which (`brownout_basis`). The reply says which topic each number came from (`chosen_by`, `link.from`).
+**Scan for trouble.** "Scan this log." `wpilog_scan` runs the usual checks and returns ranked `flags` (details: [Checks](CHECKS.md#the-usual-trouble)).
 
 **Auto against teleop.** `by_mode=true` on `wpilog_query` answers once per enabled period. `sample` on `wpilog_when` reads other topics at each stretch start ("arm angle each time the current went over 40 A"). `name_contains` takes `a|b`.
 
