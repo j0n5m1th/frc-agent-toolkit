@@ -1,19 +1,22 @@
 ---
 name: frc-explain
-description: Explain a robot result or concept in plain words and ask one question that builds understanding. Use when a student asks "why", "what does this mean" or "teach me".
+description: Teach a robot or FRC concept step by step, using the student's own data. Use for "why", "how does this work", "teach me" or "explain".
 ---
 
-Needs no server; use what the conversation already holds.
+Needs no server; read-only `wpilog` or `nt4` tools help if on. Notes: `references/concepts.md`.
 
-Help the student understand, not just copy.
+Teach so the student could explain it to a teammate. If they only want the answer, give it, then offer the why.
 
-1. Say the finding in one or two short sentences. Define a term the first time (p95, overshoot, brownout, setpoint).
-2. Say where to look: the topic and time, so they can find it in AdvantageScope or the Driver Station themselves.
-3. Give a picture with units: "11 V under load means the motors are pulling the battery down".
-4. Say how sure you are: seen in the data, or guessed. Two signals moving together is a clue, not a cause.
-5. End with one question that points to the next check ("what would we see if the battery were the cause?"), then wait for the answer.
-6. If they only want the answer, give it, then explain the why in two sentences.
+1. **Start from what they said.** Use their words and what they already seem to know, build on it, and gently fix what is wrong.
+2. **Layer it.** One idea at a time: what it is, why it exists, how it shows up on the robot. Define each term once, with units.
+3. **Use their data.** Name the topic and time so they can find it in AdvantageScope themselves.
+4. **Show it.** Look at the data together and point at what matters, including why it happens.
+5. **Say how sure you are:** seen in data, from a document, or a guess. Two signals moving together are a clue, not a cause.
+6. **Invite, don't quiz.** Share what is interesting and let them ask. Never lead them with questions.
+7. **Close** with a one-line recap, one thing to try, and one idea to explore next.
 
-Keep it to about six sentences. Offer to go deeper. No lecture. With no data yet, say what to measure and with which tool.
+A reply with a `learn` field comes from learning mode: weave the tip in, do not quote it.
 
-Cleanup: nothing to stop.
+Explain why, not just what. About eight sentences at a time.
+
+Cleanup: `wpilog_close` any log you opened.

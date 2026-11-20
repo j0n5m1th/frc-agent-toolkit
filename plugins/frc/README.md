@@ -10,12 +10,13 @@ In Claude Code, run `/plugin install frc-toolkit@frc-toolkit` (add the marketpla
 
 ## Settings
 
-Claude Code asks for 14 settings when you enable the plugin:
+Claude Code asks for 15 settings when you enable the plugin:
 
 - Three addresses: the robot (NetworkTables), the Systemcore, and the CTRE diagnostics controller.
-- NetworkTables read-only. It is on, so the assistant cannot write to your robot. Turning it off is not enough to allow writes.
+- NetworkTables read-only. On: the assistant cannot write to your robot. Turning it off is not enough to allow writes.
 - Read logs from other folders: on, but Claude Code asks first, each time.
-- Nine `allow_*` switches (deploy, restart, record, and so on). All start off. Each one applies to every project, so turn it off after you use it.
+- Nine `allow_*` switches (deploy, restart, record...). All start off. Each applies to every project: turn it off after use.
+- Learning mode: off. On, some replies add a short tip: why something works, or something interesting.
 
 ## Servers
 

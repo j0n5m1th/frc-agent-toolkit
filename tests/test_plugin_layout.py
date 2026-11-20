@@ -33,7 +33,7 @@ def test_every_entry_runs_frc_mcp_from_the_plugin_folder_with_all_five_flags():
 
 
 DIALOG_FIELDS = {"nt4_host", "systemcore_host", "diag_host", "nt4_read_only", "allow_record", "allow_deploy", "allow_prune", "allow_provision",
-                 "allow_wifi_join", "allow_restart", "allow_ctre_install", "allow_caniv_config", "allow_caniv_flash", "read_outside_logs"}
+                 "allow_wifi_join", "allow_restart", "allow_ctre_install", "allow_caniv_config", "allow_caniv_flash", "read_outside_logs", "learning_mode"}
 PROJECT = "${CLAUDE_PROJECT_DIR}"
 FOLDER_SETTINGS = {"WPILOG_DIR", "SIM_PROJECT_DIR", "VSCODE_PROJECT_DIR", "JFR_DIR", "CTRE_PROJECT_DIR", "OWLET_DIR", "PASSERINE_DIR"}
 UNSET_ON_PURPOSE = {"CTRE_TOOLS_DIR", "SYSTEMCORE_DOWNLOAD_DIR", "CANIV_FIRMWARE_DIR", "NT4_PORT"}  # the server's own default is better than the project folder
@@ -51,9 +51,9 @@ def test_every_entry_matches_its_entry_point_and_setting_placeholders_are_real_s
             assert value == PROJECT or (re.fullmatch(r"\$\{user_config\.(\w+)\}", value) and value[len("${user_config."):-1] in fields), (key, name, value)
 
 
-def test_the_dialog_has_exactly_the_fourteen_fields_and_every_field_is_used():
+def test_the_dialog_has_exactly_the_fifteen_fields_and_every_field_is_used():
     fields = user_config()
-    assert set(fields) == DIALOG_FIELDS and len(fields) == 14
+    assert set(fields) == DIALOG_FIELDS and len(fields) == 15
     used = {value[len("${user_config."):-1] for server in mcp_servers().values() for value in server["env"].values() if value != PROJECT}
     assert used == DIALOG_FIELDS
 
@@ -179,3 +179,8 @@ def test_plugin_readme_is_short_and_license_matches_the_root():
     words = len((PLUGIN / "README.md").read_text(encoding="utf-8").split())
     assert 100 <= words <= 250, words
     assert (PLUGIN / "LICENSE").read_bytes() == (ROOT / "LICENSE").read_bytes()
+
+
+def test_every_server_gets_the_learning_mode_setting():
+    for key, server in mcp_servers().items():
+        assert server["env"].get("FRC_LEARNING_MODE") == "${user_config.learning_mode}", key

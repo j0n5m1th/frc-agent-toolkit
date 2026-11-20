@@ -4,6 +4,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+- Learning mode: a new plugin setting (`learning_mode`, off by default, sets `FRC_LEARNING_MODE` on every server). While on, replies from read-only tools gain one `learn` key: a short statement that explains why something works or shares something interesting, to spark curiosity (never a question) (`learn_tips.py`), once per tool per session. Tool descriptions and schemas do not change, so the token budget is untouched. `frc-explain` is now a step-by-step teaching guide (explain why, show it in their data, invite curiosity without quizzing) with `references/concepts.md`. **Not tried with real students or a live model run yet:** the tip wording and the skill are untested beyond the unit tests.
+
 - `wpilog_scan`: one call that checks a log for the usual trouble (errors, loop overruns, battery sag and brownouts, packet loss and CAN use, signals that stopped) and returns ranked `flags`, saying what it could not check. The `scan_match` prompt uses it. **Checked on simulation and synthetic logs only, not on a real match log** (the real logs available were long simulator sessions with no battery or Driver Station data): the checks, thresholds and topic names (`battery`, `brown`, DS-log and SystemStats names) are rules of thumb and assumptions.
 - New `reduce` values on both servers: `peaks` (biggest spikes and dips, one per event) and `buckets` (min, max and mean per time slice, so spikes survive).
 - `wpilog_query by_mode=true` (one answer per enabled period), `wpilog_when sample=[...]` (other topics at the start of each stretch) and `a|b` in `name_contains` for topic and text searches.

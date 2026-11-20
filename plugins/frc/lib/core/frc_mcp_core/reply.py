@@ -46,6 +46,11 @@ def response_budget(topics: int = 0) -> int:
     return min(CEILING_CHARS, BASE_CHARS + PER_TOPIC_CHARS * max(topics, 0))
 
 
+def max_response_budget() -> int:
+    """The largest budget any reply can have: `MCP_WPILIB_MAX_CHARS` when set, else the ceiling."""
+    return response_budget(math.ceil(CEILING_CHARS / PER_TOPIC_CHARS))  # enough topics to reach the ceiling
+
+
 def topic_err(detail: str) -> dict[str, str]:
     """The one shape every tool uses for a per-topic failure, so a caller checks `"err" in item` everywhere."""
     return {"err": detail}

@@ -2,9 +2,9 @@
 
 Every setting for every server is in the tables below. The [Safety](#safety) section is the one place that explains what is protected and how.
 
-A setting is an environment variable. Most teams only use the 14 dialog fields.
+A setting is an environment variable. Most teams only use the 15 dialog fields.
 
-## The 14 plugin dialog fields
+## The 15 plugin dialog fields
 
 Open them with `/config`. Claude Code saves them once, not per project, so they apply to **every project**. After you change one, reconnect that server in `/mcp` (or restart Claude Code): a server reads its settings only when it starts.
 
@@ -24,8 +24,11 @@ Open them with `/config`. Claude Code saves them once, not per project, so they 
 | `allow_ctre_install` (Allow installing CTRE tools) | off | Sets `CTRE_ALLOW_INSTALL`. | ctre-tools |
 | `allow_caniv_config` (Allow renaming or resetting a CANivore) | off | Sets `CANIV_ALLOW_CONFIG`. | ctre-caniv |
 | `allow_caniv_flash` (Allow flashing CANivore firmware) | off | Sets `CANIV_ALLOW_FLASH`. | ctre-caniv |
+| `learning_mode` (Learning mode) | off | Sets `FRC_LEARNING_MODE`: some replies add a short `learn` tip: why something works, or something interesting. | all |
 
 ## Every other setting
+
+Without the plugin, set `FRC_LEARNING_MODE=1` on a server's entry to turn on learning mode (a `learn` tip on some replies; off by default).
 
 The plugin sets every `*_DIR` folder that holds your files (`WPILOG_DIR`, `SIM_PROJECT_DIR`, `VSCODE_PROJECT_DIR`, `JFR_DIR`, `CTRE_PROJECT_DIR`, `OWLET_DIR`, `PASSERINE_DIR`) to the folder where you started Claude Code (`${CLAUDE_PROJECT_DIR}`); **it has no setting to add more.** The log server alone may read a log elsewhere (`read_outside_logs`; Claude Code asks first). A recording, `.hoot` or MIDI file elsewhere cannot be opened: copy it into your project folder, or use your own server entry (below). Without the plugin, a server uses the folder it started in (`CTRE_PROJECT_DIR` has none; `CANIV_FIRMWARE_DIR` uses Tuner X's folders). Separate several folders with `;` (Windows) or `:`. A number outside its range is an error.
 

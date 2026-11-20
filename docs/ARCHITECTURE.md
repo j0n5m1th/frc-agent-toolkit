@@ -97,7 +97,7 @@ For contributors. This file explains why the code is shaped the way it is. How t
 
 ## The plugin (`plugins/frc/`)
 
-- **`.mcp.json` runs the same command as `docs/mcp.json.example`,** with `--project ${CLAUDE_PLUGIN_ROOT}` and the flags `--frozen --no-dev --python 3.13`. The environment values come from the 14 dialog fields in `plugin.json` (`userConfig`); `tests/test_plugin_flags.py` checks every switch the plugin sets.
+- **`.mcp.json` runs the same command as `docs/mcp.json.example`,** with `--project ${CLAUDE_PLUGIN_ROOT}` and the flags `--frozen --no-dev --python 3.13`. The environment values come from the 15 dialog fields in `plugin.json` (`userConfig`); `tests/test_plugin_flags.py` checks every switch the plugin sets.
 - **The `SessionStart` hook pre-syncs the environment** with the same flags, so eleven servers do not all download Python and packages at once. If you change the flags, change both (`tests/test_plugin_hooks.py` checks they match). If a cold start always works without it, remove it.
 - **The `PreToolUse` hook is a second lock, not the first.** Its matcher is an anchored regex over full plugin tool names (Claude Code regexes are not anchored, and a bare server key never matches). It runs `frc-mcp hook ask`, which prints one JSON line asking a person first. The switches stay the real boundary. Which modes honour it is partly not verified ([SETTINGS.md](SETTINGS.md#the-confirm-first-hook)).
 - **Agents.** `match-log-analyst` reads logs in its own context. Its `tools:` list is read-only: nothing that records, converts or needs an `*_ALLOW_*` switch (`tests/test_plugin_agents.py`).
