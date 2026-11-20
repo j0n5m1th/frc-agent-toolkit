@@ -72,3 +72,11 @@ def test_too_few_comparisons_are_nothing_to_compare():
         analyze_mechanism([(0, 1.0)], [(n * STEP_US, 1.0) for n in range(3)], [(0, S)], 0)
     with pytest.raises(NothingToCompare):
         analyze_mechanism([], [(0, 1.0)], [(0, S)], 0)
+
+
+def test_a_stall_peak_between_velocity_updates_is_still_the_peak():
+    setpoint, measurement = series([(2.0, 1.0)], seconds=4)
+    velocity = [(n * STEP_US * 5, 0.0) for n in range(40)]  # slow velocity log, always stopped
+    current = [(n * STEP_US, 90.0 if n == 103 else 45.0) for n in range(200)]  # a spike between two velocity updates
+    out = analyze_mechanism(setpoint, measurement, [(0, 4 * S)], 0, velocity, current)
+    assert out["stalls"]["first"][0]["max_a"] == 90.0

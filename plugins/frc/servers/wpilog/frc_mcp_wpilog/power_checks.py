@@ -6,11 +6,12 @@ The check itself (and the naming conventions) is in `frc_mcp_wpilib.power`, whic
 from collections.abc import Sequence
 from typing import Any
 
+from frc_mcp_core.reply import no_match
 from frc_mcp_wpilib import power as core
 from frc_mcp_wpilib.scan_roles import ScanError
 from frc_mcp_wpilib.tracking import NothingToCompare
 
-from .checks import no_match, scan_topics, scope_for
+from .checks import scan_topics, scope_for
 from .errors import WPILogError
 from .logfile import serialized
 from .loglike import LogLike

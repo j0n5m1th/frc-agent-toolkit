@@ -9,15 +9,22 @@ The two arrays are found only by a logging convention, never by a suggestive nam
 The layout read is WPILib's `SwerveModuleState`: a double speed, then a double angle in radians, 16 bytes per module.
 """
 
-import math
 import struct
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Any, NamedTuple
 
-from .reduce.stats import US_PER_S, percentile
+from .reduce.stats import percentile
 from .scan_roles import leaf_and_parents
-from .tracking import NothingToCompare, Samples, Window, held_pairs, require_enough
+from .tracking import (
+    NothingToCompare,
+    Samples,
+    Window,
+    held_pairs,
+    require_enough,
+    seconds_since,
+    turn_deg,
+)
 
 STATE_TYPE = "struct:SwerveModuleState[]"
 # (parent folder, measured leaf, setpoint leaves in order of preference), all lower case
@@ -67,11 +74,6 @@ def decode_states(raw: Any) -> list[ModuleState]:
     return [ModuleState(speed, angle) for speed, angle in struct.iter_unpack("<dd", bytes(raw))]
 
 
-def _wrap_deg(radians: float) -> float:
-    """The size, in degrees, of an angle difference, taking the short way round."""
-    return abs((math.degrees(radians) + 180) % 360 - 180)
-
-
 def analyze(measured: Samples, setpoint: Samples, windows: Sequence[Window], origin_us: int) -> dict[str, Any]:
     """Per module: how far its speed and angle were from the command, over the windows. The command is the last setpoint at or before each measured
     update. Angle is compared only while the module was commanded to move. Raises NothingToCompare when there is nothing to compare."""
@@ -88,7 +90,7 @@ def analyze(measured: Samples, setpoint: Samples, windows: Sequence[Window], ori
             speed_err[k].append(err)
             top_speed[k] = max(top_speed[k], abs(m.speed))
             if abs(s.speed) >= MOVING_MPS:
-                angle_err[k].append(_wrap_deg(m.angle - s.angle))
+                angle_err[k].append(turn_deg(m.angle - s.angle))
             if worst is None or err > worst[0]:
                 worst = (err, k, t)
     require_enough(max((len(errors) for errors in speed_err.values()), default=0))
@@ -100,7 +102,7 @@ def analyze(measured: Samples, setpoint: Samples, windows: Sequence[Window], ori
         if angle_err[k]:
             row |= {"angle_err_mean_deg": round(sum(angle_err[k]) / len(angle_err[k]), 1), "angle_err_p95_deg": round(percentile(sorted(angle_err[k]), 95), 1)}
         modules.append(row)
-    return {"modules": modules, "worst_speed_err": {"module": worst[1], "mps": round(worst[0], 2), "at_s": round((worst[2] - origin_us) / US_PER_S, 1)}}
+    return {"modules": modules, "worst_speed_err": {"module": worst[1], "mps": round(worst[0], 2), "at_s": seconds_since(worst[2], origin_us)}}
 
 
 def lagging(modules: Sequence[dict[str, Any]]) -> list[str]:

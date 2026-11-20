@@ -4,11 +4,13 @@ A command holds until the next command, so each measured update is paired with t
 time windows count, thinned to a bounded number so a long log costs no more than a short one.
 """
 
+import math
 from bisect import bisect_left, bisect_right
 from collections.abc import Iterator, Sequence
 from typing import Any
 
 from .errors import WPILibMCPError
+from .reduce.stats import US_PER_S
 from .scan_rows import Row, Window, everywhere
 
 MAX_SAMPLES = 3000  # measured updates read (evenly spread)
@@ -19,6 +21,16 @@ Samples = Sequence[Row]  # (time in microseconds, value), oldest first
 
 class NothingToCompare(WPILibMCPError):
     """The two signals cannot be compared: one has no updates, none has a command before it, there are too few pairs, or the values are not the expected kind."""
+
+
+def seconds_since(us: int, origin_us: int) -> float:
+    """Seconds from time zero to `us`, to a tenth."""
+    return round((us - origin_us) / US_PER_S, 1)
+
+
+def turn_deg(radians: float) -> float:
+    """The size, in degrees, of a turn or an angle difference of `radians`, taking the short way round."""
+    return abs((math.degrees(radians) + 180) % 360 - 180)
 
 
 def sampled(times: Sequence[int], windows: Sequence[Window]) -> list[int]:

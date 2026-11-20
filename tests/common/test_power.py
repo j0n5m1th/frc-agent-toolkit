@@ -81,3 +81,19 @@ def test_nothing_to_check_is_said_and_nan_is_ignored():
         analyze_power([], [], [], (6.0, "default"), [], 0)
     out = analyze_power([(0, 12.0), (S, float("nan")), (2 * S, 11.0)], [], [], (6.0, "default"), [], 0)
     assert out["voltage"]["min_v"] == 11.0
+
+
+def test_a_named_hidden_current_topic_is_used_and_time_below_brownout_does_not_cross_a_disabled_gap():
+    hidden = topic("/Hidden/Amps")
+    found = current_sources([topic("/Visible/Amps")], ["/Hidden/Amps"], {"/Hidden/Amps": hidden, "/Visible/Amps": topic("/Visible/Amps")})
+    assert [t.name for t in found.topics] == ["/Hidden/Amps"]
+    # 5.5 V at the end of auto, then 12 V at the start of teleop 90 s later: only the time inside a window counts
+    voltage = [(8 * S, 5.5), (9 * S, 5.5), (99 * S, 12.0), (100 * S, 12.0)]
+    out = analyze_power(voltage, [], [], (6.0, "default"), [(0, 9 * S), (99 * S, 100 * S)], 0)
+    assert out["voltage"]["below_brownout_s"] == 1.0
+
+
+def test_a_brownout_flag_still_true_when_the_window_ends_is_cut_at_the_end_of_the_window():
+    flag = [(0, False), (int(8.9 * S), True)]
+    out = analyze_power([], [flag], [], (6.0, "default"), [(0, 9 * S)], 0)
+    assert out["brownouts"]["count"] == 1 and out["brownouts"]["total_s"] == 0.1

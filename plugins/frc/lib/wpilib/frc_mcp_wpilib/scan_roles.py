@@ -7,6 +7,7 @@ answer: the first topic with "volt" in its name can be a 5 V rail, not the batte
 This is shared by the log server and the live server, so a recorded match and a live robot are scanned by the same rules.
 """
 
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
@@ -19,8 +20,23 @@ MAX_CANDIDATES = 3
 NUMBER_TYPES = ("double", "float", "int")  # NetworkTables spelling: a WPILOG int64 is `int`
 
 
+NUMBER_HINT = "it must be a number (double, float or int)"
+
+
 class ScanError(WPILibMCPError):
     """A named topic cannot be used: it is missing or is not a number."""
+
+
+def require_named(types: Mapping[str, str], names: Iterable[str | None], allowed: Collection[str], what: str, not_found: str = "") -> None:
+    """Raise ScanError for a named topic that is not in `types` (topic name to type), or whose type is not one of `allowed`. `None` names are skipped.
+    `what` finishes the wrong-type message; `not_found` is a hint added to the missing-topic one."""
+    for name in names:
+        if not name:
+            continue
+        if name not in types:
+            raise ScanError(f"{name!r} is not among the topics{f' ({not_found})' if not_found else ''}.")
+        if types[name] not in allowed:
+            raise ScanError(f"{name!r} is type {types[name]}; {what}.")
 
 
 class ScanTopic(NamedTuple):

@@ -27,7 +27,7 @@ from .scan_roles import (
     leaf_and_parents,
 )
 from .scan_rows import Row, Window, finite_numbers, value_at, within
-from .tracking import NothingToCompare
+from .tracking import NothingToCompare, seconds_since
 
 BROWNOUT_DEFAULT_V = 6.0  # the Systemcore's nominal setting (vendor specification, not seen on a robot here)
 BROWNOUT_LEAVES = ("brownoutvoltage",)
@@ -61,10 +61,11 @@ class CurrentSources(NamedTuple):
     candidates: list[str]  # named like a current but not used
 
 
-def current_sources(visible: Sequence[ScanTopic], given: Sequence[str] = ()) -> CurrentSources:
-    """The current signals: the ones the caller named, else the conventional ones. Others with `current` or `amps` in the name are only listed."""
+def current_sources(visible: Sequence[ScanTopic], given: Sequence[str] = (), known: Mapping[str, ScanTopic] | None = None) -> CurrentSources:
+    """The current signals: the ones the caller named (any topic in `known`, hidden ones too), else the conventional ones. Others with `current`
+    or `amps` in the name are only listed."""
     if given:
-        by_name = {t.name: t for t in visible}
+        by_name = known or {t.name: t for t in visible}
         return CurrentSources([by_name[n] for n in given if n in by_name], "explicit", [])
     chosen = []
     for t in visible:
@@ -90,22 +91,31 @@ def expand(topic: ScanTopic, rows: Sequence[Row]) -> list[Series]:
             for i, v in enumerate(values):
                 by_channel[i].append((t, float(v)))
         return [Series(topic.name, i, r) for i, r in sorted(by_channel.items())]
-    numbers = finite_numbers(rows)
-    return [Series(topic.name, int(m.group(1)) if (m := CHANNEL_LEAF.match(leaf)) else None, numbers)]
+    return [Series(topic.name, int(m.group(1)) if (m := CHANNEL_LEAF.match(leaf)) else None, list(rows))]
 
 
 def _intervals(flag_rows: Sequence[Row], windows: Sequence[Window], end_us: int) -> list[tuple[int, int]]:
-    """When a boolean was true: each update holds until the next (the last until the end of the window or data)."""
+    """When a boolean was true: each update holds until the next (the last until `end_us`), but not past the end of the window it began in."""
     rows = [r for r in flag_rows if isinstance(r[1], bool)]
     out: list[tuple[int, int]] = []
     for i, (t, v) in enumerate(rows):
         nxt = rows[i + 1][0] if i + 1 < len(rows) else end_us
-        if v and nxt > t and (not windows or any(lo <= t <= hi for lo, hi in windows)):
+        if windows:
+            hi = next((hi for lo, hi in windows if lo <= t <= hi), None)
+            if hi is None:
+                continue
+            nxt = min(nxt, hi)
+        if v and nxt > t:
             if out and out[-1][1] == t:  # the flag stayed true: one stretch, not one per update
                 out[-1] = (out[-1][0], nxt)
             else:
                 out.append((t, nxt))
     return out
+
+
+def _together(windows: Sequence[Window], t0: int, t1: int) -> bool:
+    """True when both times are in one window, so the stretch between two readings does not cross a disabled gap."""
+    return not windows or any(lo <= t0 and t1 <= hi for lo, hi in windows)
 
 
 def analyze_power(voltage: Sequence[Row], flags: Sequence[Sequence[Row]], series: Sequence[Series], threshold: tuple[float, str], windows: Sequence[Window],
@@ -128,12 +138,12 @@ def analyze_power(voltage: Sequence[Row], flags: Sequence[Sequence[Row]], series
     low_t = None
     if volts:
         low_t, low = min(volts, key=lambda r: r[1])
-        under = sum(max(0, b[0] - a[0]) for a, b in zip(volts, volts[1:], strict=False) if float(a[1]) < brownout_v) / US_PER_S
-        out["voltage"] = {"min_v": round(float(low), 2), "min_at_s": round((low_t - origin_us) / US_PER_S, 1), "below_brownout_s": round(under, 1),
+        under = sum(b[0] - a[0] for a, b in zip(volts, volts[1:], strict=False) if float(a[1]) < brownout_v and _together(windows, a[0], b[0])) / US_PER_S
+        out["voltage"] = {"min_v": round(float(low), 2), "min_at_s": seconds_since(low_t, origin_us), "below_brownout_s": round(under, 1),
                           "brownout_v": brownout_v, "brownout_basis": basis}
     if brownouts:
         out["brownouts"] = {"count": len(brownouts), "total_s": round(sum(b - a for a, b in brownouts) / US_PER_S, 1),
-                            "first": [[round((a - origin_us) / US_PER_S, 1), round((b - origin_us) / US_PER_S, 1)] for a, b in sorted(brownouts)[:3]]}
+                            "first": [[seconds_since(a, origin_us), seconds_since(b, origin_us)] for a, b in sorted(brownouts)[:3]]}
 
     def entry(s: Series, **more: Any) -> dict[str, Any]:
         row: dict[str, Any] = {"source": s.source}
@@ -144,7 +154,7 @@ def analyze_power(voltage: Sequence[Row], flags: Sequence[Sequence[Row]], series
         return row | more
 
     peaks.sort(key=lambda p: -p[0])
-    out["top_current"] = [entry(s, peak_a=round(a, 1), at_s=round((at[0] - origin_us) / US_PER_S, 1),
+    out["top_current"] = [entry(s, peak_a=round(a, 1), at_s=seconds_since(at[0], origin_us),
                                 battery_v_then=round(float(v), 2) if (v := value_at(volts, at[0])) is not None else None) for a, s, at in peaks[:MAX_LISTED]]
     if low_t is not None:
         then = [(abs(float(v)), s, float(v)) for s, inside in clean if (v := value_at(inside, low_t)) is not None]
@@ -186,7 +196,7 @@ def plan_power(visible: Sequence[ScanTopic], known: dict[str, ScanTopic], batter
         if not (known[name].is_numeric or known[name].type_str in NUMBER_ARRAYS):
             raise ScanError(f"current {name!r} is type {known[name].type_str}; it must be a number or an array of numbers.")
     return PowerPlan(battery_choice(list(visible), battery, known, not_found), brownout_choice(list(visible)), threshold_topic(visible),
-                     current_sources(visible, currents), info_topics(visible))
+                     current_sources(visible, currents, known), info_topics(visible))
 
 
 def run_power(plan: PowerPlan, rows: Mapping[str, Sequence[Row]], windows: Sequence[Window], origin_us: int, brownout_v: float | None = None) -> dict[str, Any]:

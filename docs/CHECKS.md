@@ -53,4 +53,3 @@ It uses a pair of arrays only when their names follow a convention: AdvantageKit
 ## On a log and live
 
 On a log the default window is the enabled periods; give `since_ms` and `until_ms` for a window. A live tool records for `duration_s` seconds, and someone must be driving the robot: a live recording cannot tell when the robot was enabled, so it covers the whole recording. **Checked on synthetic logs and a local NetworkTables server, not on a real robot or a real match log. The topic names are AdvantageKit, WPILib and CTRE conventions from their documentation.**
-

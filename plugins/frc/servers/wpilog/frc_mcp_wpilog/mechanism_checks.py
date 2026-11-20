@@ -5,11 +5,12 @@ The check itself is in `frc_mcp_wpilib.mechanism`, which the live server shares.
 
 from typing import Any
 
+from frc_mcp_core.reply import no_match
 from frc_mcp_wpilib import mechanism as core
 from frc_mcp_wpilib.scan_roles import NUMBER_TYPES
 from frc_mcp_wpilib.tracking import NothingToCompare
 
-from .checks import no_match, require_topics, scope_for
+from .checks import require_topics, scope_for
 from .logfile import serialized
 from .loglike import LogLike
 from .windows import Range

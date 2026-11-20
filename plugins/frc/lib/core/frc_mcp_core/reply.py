@@ -85,6 +85,11 @@ def with_status(data: dict[str, Any], results: Iterable[Any] | None = None, *, o
     return {"status": "no_match", **({"reason": reason} if reason else {}), "hint": NO_MATCH_HINT, **data}
 
 
+def no_match(facts: dict[str, Any], reason: str) -> dict[str, Any]:
+    """A reply that says nothing could be checked (`status: no_match`) and why, beside the facts found so far."""
+    return with_status(facts, (), reason=reason)
+
+
 def compact_json(data: Any) -> str:
     """Compact JSON text that the stdio writer can always encode: a lone surrogate (a file name that is not valid text) becomes a backslash-u escape."""
     return encodable(json.dumps(to_jsonable(data), separators=(",", ":"), default=str, allow_nan=False, ensure_ascii=False))

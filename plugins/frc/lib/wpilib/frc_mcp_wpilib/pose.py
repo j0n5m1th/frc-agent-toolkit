@@ -12,13 +12,15 @@ from typing import Any, NamedTuple
 
 from .reduce.stats import US_PER_S, percentile
 from .scan_roles import leaf_and_parents
-from .scan_rows import Window, everywhere, within
+from .scan_rows import Row, Window, everywhere, within
 from .tracking import (
     MIN_COMPARED,
     NothingToCompare,
     Samples,
     held_pairs,
     require_enough,
+    seconds_since,
+    turn_deg,
 )
 
 POSE_TYPE = "struct:Pose2d"
@@ -67,28 +69,20 @@ def decode_pose(raw: Any) -> Pose:
     return Pose(*struct.unpack("<ddd", bytes(raw)))
 
 
-def _turn_deg(radians: float) -> float:
-    """The size, in degrees, of a turn of `radians`, taking the short way round."""
-    return abs((math.degrees(radians) + 180) % 360 - 180)
-
-
-def _seconds(us: int, origin_us: int) -> float:
-    return round((us - origin_us) / US_PER_S, 1)
-
-
-def _jumps(pose: Samples, windows: Sequence[Window], origin_us: int) -> dict[str, Any]:
-    rows = within(pose, windows)
-    found: list[tuple[float, int, float, float]] = []  # meters, time, degrees, implied speed
-    for (t0, a), (t1, b) in zip(rows, rows[1:], strict=False):
-        p, q = decode_pose(a), decode_pose(b)
-        meters = math.hypot(q.x - p.x, q.y - p.y)
-        speed = meters / ((t1 - t0) / US_PER_S) if t1 > t0 else 0.0
-        if meters >= JUMP_MIN_M and speed > JUMP_MPS:
-            found.append((meters, t1, _turn_deg(q.theta - p.theta), speed))
+def _jumps(rows: Sequence[Row], origin_us: int) -> dict[str, Any]:
+    found: list[tuple[float, int, float]] = []  # meters, time, degrees
+    previous = decode_pose(rows[0][1]) if rows else None
+    for (t0, _), (t1, raw) in zip(rows, rows[1:], strict=False):
+        assert previous is not None
+        now = decode_pose(raw)
+        meters = math.hypot(now.x - previous.x, now.y - previous.y)
+        if meters >= JUMP_MIN_M and t1 > t0 and meters / ((t1 - t0) / US_PER_S) > JUMP_MPS:
+            found.append((meters, t1, turn_deg(now.theta - previous.theta)))
+        previous = now
     found.sort(reverse=True)
     out: dict[str, Any] = {"count": len(found)}
     if found:
-        out["largest"] = [{"at_s": _seconds(t, origin_us), "meters": round(m, 2), "degrees": round(d, 1)} for m, t, d, _ in found[:MAX_JUMPS_LISTED]]
+        out["largest"] = [{"at_s": seconds_since(t, origin_us), "meters": round(m, 2), "degrees": round(d, 1)} for m, t, d in found[:MAX_JUMPS_LISTED]]
     return out
 
 
@@ -100,9 +94,10 @@ def analyze_pose(pose: Samples, windows: Sequence[Window], origin_us: int, refer
     """The pose's jumps over the windows, and (with a `reference` pose) how far apart the two were in position and heading.
     Raises NothingToCompare when there are too few updates or the values are not poses."""
     windows = everywhere(windows)
-    if len(within(pose, windows)) < MIN_COMPARED:
+    inside = within(pose, windows)
+    if len(inside) < MIN_COMPARED:
         raise NothingToCompare(f"fewer than {MIN_COMPARED} pose updates in the time checked")
-    out: dict[str, Any] = {"jumps": _jumps(pose, windows, origin_us)}
+    out: dict[str, Any] = {"jumps": _jumps(inside, origin_us)}
     if reference is not None:
         meters: list[float] = []
         degrees: list[float] = []
@@ -111,10 +106,10 @@ def analyze_pose(pose: Samples, windows: Sequence[Window], origin_us: int, refer
             p, q = decode_pose(raw), decode_pose(ref_raw)
             d = math.hypot(p.x - q.x, p.y - q.y)
             meters.append(d)
-            degrees.append(_turn_deg(p.theta - q.theta))
+            degrees.append(turn_deg(p.theta - q.theta))
             if worst is None or d > worst[0]:
                 worst = (d, t)
         require_enough(len(meters))
         assert worst is not None
-        out["vs_reference"] = {"n": len(meters), "meters": _stats(meters, 3), "degrees": _stats(degrees, 1), "worst_at_s": _seconds(worst[1], origin_us)}
+        out["vs_reference"] = {"n": len(meters), "meters": _stats(meters, 3), "degrees": _stats(degrees, 1), "worst_at_s": seconds_since(worst[1], origin_us)}
     return out

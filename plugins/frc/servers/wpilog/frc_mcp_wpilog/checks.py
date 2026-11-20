@@ -5,9 +5,8 @@ finds its topics in an open log, picks the scope and shapes the reply.
 """
 
 from collections.abc import Collection
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
-from frc_mcp_core.reply import with_status
 from frc_mcp_wpilib.reduce.stats import US_PER_MS
 from frc_mcp_wpilib.scan_roles import ScanTopic
 from frc_mcp_wpilib.tracking import Window
@@ -46,11 +45,6 @@ def require_topics(log: LogLike, names: Collection[str | None], types: Collectio
             raise WPILogError(f"{name!r} is {NOT_IN_LOG} ({FIND_NAMES_HINT}).")
         if name and types is not None and log.topics[name].type_str not in types:
             raise WPILogError(f"{name!r} is type {log.topics[name].type_str}; {what or 'it must be one of ' + ', '.join(sorted(types))}.")
-
-
-def no_match(facts: dict[str, Any], reason: str) -> dict[str, Any]:
-    """A reply that says nothing could be checked (`status: no_match`) and why, beside the facts found so far."""
-    return with_status(facts, (), reason=reason)
 
 
 def scan_topics(log: LogLike) -> tuple[list[ScanTopic], dict[str, ScanTopic]]:

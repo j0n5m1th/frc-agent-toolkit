@@ -19,6 +19,7 @@ from .tracking import (
     Samples,
     held_pairs,
     require_enough,
+    seconds_since,
 )
 
 STEP_FRACTION = 0.05  # a setpoint change this big (of the previous setpoint) is a step
@@ -31,10 +32,6 @@ STALL_SPEED = 0.01  # |velocity| below this counts as stopped, in the velocity s
 MAX_STALLS_LISTED = 3
 
 
-def _seconds(us: int, origin_us: int) -> float:
-    return round((us - origin_us) / US_PER_S, 1)
-
-
 def _following_error(measurement: Samples, setpoint: Samples, windows: Sequence[Window], origin_us: int) -> dict[str, Any]:
     errors: list[tuple[int, float]] = []
     for t, m, _, c in held_pairs(finite_numbers(measurement), finite_numbers(setpoint), windows):
@@ -43,7 +40,7 @@ def _following_error(measurement: Samples, setpoint: Samples, windows: Sequence[
     values = [e for _, e in errors]
     worst = max(errors, key=lambda r: abs(r[1]))
     return {"n": len(values), "rmse": round(math.sqrt(sum(e * e for e in values) / len(values)), 4), "bias": round(sum(values) / len(values), 4),
-            "max_abs": round(abs(worst[1]), 4), "max_at_s": _seconds(worst[0], origin_us)}
+            "max_abs": round(abs(worst[1]), 4), "max_at_s": seconds_since(worst[0], origin_us)}
 
 
 def _commands(setpoint: Sequence[Row], window: Window) -> list[Row]:
@@ -97,9 +94,13 @@ def _stalls(velocity: Sequence[Row], current: Sequence[Row], windows: Sequence[W
                 stretches[-1][2] = max(stretches[-1][2], abs(float(a)))
             else:
                 stretches.append([t, end, abs(float(a))])
+    amp_times = [t for t, _ in amps]
+    for stretch in stretches:  # the peak is the highest current anywhere in the stretch, not only at velocity updates
+        inside = amps[bisect_left(amp_times, stretch[0]):bisect_right(amp_times, stretch[1])]
+        stretch[2] = max([stretch[2], *(abs(float(a)) for _, a in inside)])
     out: dict[str, Any] = {"count": len(stretches), "total_s": round(sum(e - s for s, e, _ in stretches) / US_PER_S, 1)}
     if stretches:
-        out["first"] = [{"start_s": _seconds(s, origin_us), "end_s": _seconds(e, origin_us), "max_a": round(a, 1)} for s, e, a in stretches[:MAX_STALLS_LISTED]]
+        out["first"] = [{"start_s": seconds_since(s, origin_us), "end_s": seconds_since(e, origin_us), "max_a": round(a, 1)} for s, e, a in stretches[:MAX_STALLS_LISTED]]
     return out
 
 
@@ -121,8 +122,7 @@ def analyze_mechanism(setpoint: Samples, measurement: Samples, windows: Sequence
         hot = within(finite_numbers(temperature), windows)
         if hot:
             peak = max(hot, key=lambda r: float(r[1]))
-            out["temperature"] = {"max": round(float(peak[1]), 1), "max_at_s": _seconds(peak[0], origin_us), "last": round(float(hot[-1][1]), 1)}
+            out["temperature"] = {"max": round(float(peak[1]), 1), "max_at_s": seconds_since(peak[0], origin_us), "last": round(float(hot[-1][1]), 1)}
     if skipped:
         out["skipped"] = skipped
     return out
-

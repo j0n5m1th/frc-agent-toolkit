@@ -7,6 +7,7 @@ being related. The caller names both signals.
 """
 
 import math
+from bisect import bisect_right
 from collections.abc import Sequence
 from typing import Any
 
@@ -51,21 +52,25 @@ def analyze_correlation(a: Samples, b: Samples, windows: Sequence[Window], max_l
     if len(grid) < MIN_COMPARED:
         raise NothingToCompare(f"only {len(grid)} points overlap (at least {MIN_COMPARED} are needed)")
     lag_step = max(step, round(max_lag_s * US_PER_S / LAGS))
+    b_times = [t for t, _ in b_rows]
+
+    def b_at(t: int) -> float | None:
+        i = bisect_right(b_times, t) - 1
+        return float(b_rows[i][1]) if i >= 0 else None
+
+    reach = round(max_lag_s * US_PER_S)
+    lags = sorted({0, *range(-reach, reach + 1, lag_step)})  # zero lag is always scanned: it is the headline number
     scanned: list[tuple[float, int]] = []  # (r, lag) at each lag with enough points
     zero: float | None = None
-    for lag in range(-round(max_lag_s * US_PER_S), round(max_lag_s * US_PER_S) + 1, lag_step) if max_lag_s > 0 else [0]:
-        pairs = [(x, value_at(b_rows, t + lag)) for x, t in zip(xs, grid, strict=True)]
-        kept = [(x, float(y)) for x, y in pairs if y is not None]
+    for lag in lags:
+        kept = [(x, y) for x, t in zip(xs, grid, strict=True) if (y := b_at(t + lag)) is not None]
         if len(kept) < MIN_COMPARED or (r := _pearson([x for x, _ in kept], [y for _, y in kept])) is None:
             continue
         if lag == 0:
             zero = r
         scanned.append((r, lag))
     if zero is None:
-        r0 = _pearson(xs, [float(value_at(b_rows, t)) for t in grid])
-        if r0 is None:
-            raise NothingToCompare("one of the signals never changes in the time checked, so there is nothing to correlate")
-        zero = r0
+        raise NothingToCompare("one of the signals never changes in the time checked, so there is nothing to correlate")
     # the best match is the strongest |r|; among matches within `TIE` of it, the one nearest zero lag (a periodic signal matches at many lags)
     best = min(((r, lag) for r, lag in scanned if abs(r) >= max(abs(r) for r, _ in scanned) - TIE), key=lambda p: abs(p[1])) if scanned else None
     out: dict[str, Any] = {"n": len(grid), "r": round(zero, 3), "strength": _strength(zero), "direction": "together" if zero >= 0 else "opposite"}
