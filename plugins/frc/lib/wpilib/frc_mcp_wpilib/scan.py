@@ -12,12 +12,13 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from .power import brownout_threshold, threshold_topic
 from .reduce.stats import US_PER_S
 from .scan_loop_can import can_check, counter_topics, loop_check, loop_topics
 from .scan_roles import Choice, ScanTopic, battery_choice, brownout_choice
 from .scan_rows import Row, Window, finite_numbers
 
-LOW_VOLTS, BROWNOUT_VOLTS = 10.0, 7.0  # the roboRIO can brown out near 7 V
+LOW_VOLTS = 10.0  # a resting battery should be higher; a load pulls it down
 MIN_SILENT_UPDATES = 100  # a topic with fewer updates is event-driven; its silence says nothing
 MIN_SILENT_S = 10.0
 MANY_STOPPED = 5  # this many signals stopping early is read as one cause, not several faults
@@ -55,6 +56,7 @@ class ScanPlan:
     text_names: list[str]
     battery: Choice
     browned: Choice
+    threshold: ScanTopic | None  # where the robot publishes its brownout setting, if it does
     links: dict[str, list[ScanTopic]]
     full_loop: ScanTopic | None
     user_loop: ScanTopic | None
@@ -65,7 +67,7 @@ class ScanPlan:
     def names(self) -> list[str]:
         """Every topic whose rows the checks read, once each."""
         loops = [t for t in (self.full_loop, self.user_loop) if t is not None]
-        wanted = [*self.text_names, *(t.name for t in self.battery.topics), *(t.name for t in self.browned.topics),
+        wanted = [*self.text_names, *(t.name for t in self.battery.topics), *(t.name for t in self.browned.topics), *([self.threshold.name] if self.threshold else []),
                   *(t.name for found in self.links.values() for t in found), *(t.name for t in loops),
                   *(t.name for fields in self.buses.values() for t in fields.values())]
         return list(dict.fromkeys(wanted))
@@ -77,7 +79,7 @@ def plan(topics: Sequence[ScanTopic], text_names: Sequence[str], known: dict[str
     visible: Visible = [(t, t.name.lower()) for t in topics]
     shown = list(topics)
     full_loop, user_loop, loop_names = loop_topics(shown)
-    return ScanPlan(visible, list(text_names), battery_choice(shown, battery_topic, known, not_found_hint), brownout_choice(shown),
+    return ScanPlan(visible, list(text_names), battery_choice(shown, battery_topic, known, not_found_hint), brownout_choice(shown), threshold_topic(shown),
                     {label: _pick(visible, *words)[:1] for label, words, _ in LINK}, full_loop, user_loop, loop_names, counter_topics(shown))
 
 
@@ -149,9 +151,10 @@ def _messages(rows: TopicRows, names: list[str], origin: int) -> tuple[dict[str,
     return out, flags
 
 
-def _battery(end_us: int, rows: TopicRows, battery_pick: Choice, browned_pick: Choice, origin: int) -> tuple[dict[str, Any], list[str]]:
+def _battery(end_us: int, rows: TopicRows, battery_pick: Choice, browned_pick: Choice, origin: int, threshold: tuple[float, str]) -> tuple[dict[str, Any], list[str]]:
     flags: list[str] = []
     out: dict[str, Any] = {}
+    brownout_v, basis = threshold
     battery: ScanTopic | None = battery_pick.topics[0] if battery_pick.topics else None
     browned = browned_pick.topics
     if battery:
@@ -162,12 +165,12 @@ def _battery(end_us: int, rows: TopicRows, battery_pick: Choice, browned_pick: C
         elif readings:
             at_us, low = min(readings, key=lambda r: r[1])
             at = round((at_us - origin) / US_PER_S, 1)
-            under, brown = _held_s(every, end_us, lambda v: 0 < v < LOW_VOLTS, lambda v: 0 < v < BROWNOUT_VOLTS)  # a 0 V stretch is not sag
-            out["battery"] = {"topic": battery.name, "chosen_by": battery_pick.by, "min_v": round(low, 2), "min_at_s": at, "below_10v_s": round(under, 1), "below_7v_s": round(brown, 1)}
+            under, brown = _held_s(every, end_us, lambda v: 0 < v < LOW_VOLTS, lambda v: 0 < v < brownout_v)  # a 0 V stretch is not sag
+            out["battery"] = {"topic": battery.name, "chosen_by": battery_pick.by, "min_v": round(low, 2), "min_at_s": at, "below_10v_s": round(under, 1), "below_brownout_s": round(brown, 1), "brownout_v": brownout_v, "brownout_basis": basis}
             if battery_pick.others:
                 out["battery"]["others"] = battery_pick.others  # other topics that could be the battery: confirm which one is
-            if low < BROWNOUT_VOLTS:
-                flags.append(f"high: battery fell to {low:.1f} V at {at} s (the roboRIO can brown out below 7 V)")
+            if low < brownout_v:
+                flags.append(f"high: battery fell to {low:.1f} V at {at} s, below the {brownout_v:g} V brownout setting ({basis.split(' (')[0].split(':')[0]})")
             elif low < LOW_VOLTS:
                 flags.append(f"med: battery fell to {low:.1f} V at {at} s; {under:.1f} s below 10 V")
         else:
@@ -242,7 +245,7 @@ def run(plan: ScanPlan, rows: TopicRows, ctx: ScanContext) -> dict[str, Any]:
         flags.append(f"low: {ctx.enabled_note}")
     out["messages"], more = _messages(rows, plan.text_names, ctx.origin_us)
     flags += more
-    power, more = _battery(ctx.end_us, rows, plan.battery, plan.browned, ctx.origin_us)
+    power, more = _battery(ctx.end_us, rows, plan.battery, plan.browned, ctx.origin_us, brownout_threshold(plan.threshold, rows[plan.threshold.name] if plan.threshold else ()))
     out.update(power)
     flags += more
     out["link"], more = _link(rows, plan.links)
@@ -259,6 +262,6 @@ def run(plan: ScanPlan, rows: TopicRows, ctx: ScanContext) -> dict[str, Any]:
             out["stopped_early"] = silent
         flags += more
     order = {"high": 0, "med": 1, "low": 2}
-    out["flags"] = sorted(flags, key=lambda f: (order[f.split(":", 1)[0]], "brownout" not in f)) or ["none found by these checks"]  # a brownout leads its tier
+    out["flags"] = sorted(flags, key=lambda f: (order[f.split(":", 1)[0]], "brownout flag" not in f)) or ["none found by these checks"]  # a brownout leads its tier
     out["not_checked"] = "wiring, mechanisms, the drivetrain and signals not named above: query them directly"
     return out

@@ -34,7 +34,7 @@ For each session, the Driver Station laptop saves two files with the same name i
 | `/DSLog/PowerDistributionCurrents` | current on each channel (A) |
 | `/DSEvents`, `/DSInfo/StartTimeUTC` | the messages as text; when the log started |
 
-Time zero is when the Driver Station started the log. Try: "When did the battery drop below 7 V, and was there a brownout?" Limits:
+Time zero is when the Driver Station started the log. Try: "When did the battery drop below the brownout setting, and was there a brownout?" Limits:
 
 - **Not yet checked with a real Driver Station.** FIRST does not publish the file format. The reader follows AdvantageScope's open-source reader and was tested only on files built to match it. Please report a log that reads wrong.
 - The log does not say autonomous or test, only "teleop or not". Enabled but not teleop is shown as `auto`.

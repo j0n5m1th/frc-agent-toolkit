@@ -22,7 +22,7 @@ def at(seconds):
 
 
 def build_trouble_log(path):
-    """Enabled 1-9 s. Battery sags to 6.5 V at 4 s with a brownout flag; a busy signal stops at 2 s; 6 loop overruns; one error."""
+    """Enabled 1-9 s. Battery sags to 5.5 V at 4 s with a brownout flag; a busy signal stops at 2 s; 6 loop overruns; one error."""
     w = LogWriter()
     enabled = w.start("DS:enabled", "boolean", "", BASE)
     w.append(enabled, False, BASE)
@@ -34,7 +34,7 @@ def build_trouble_log(path):
     alive = w.start("NT:/Fake/Alive", "double", "", BASE)
     for n in range(0, 301):
         t = n * 0.04
-        w.append(battery, 6.5 if 4.0 <= t < 4.4 else 12.0, at(t))
+        w.append(battery, 5.5 if 4.0 <= t < 4.4 else 12.0, at(t))
         w.append(brown, 4.0 <= t < 4.4, at(t))
         w.append(alive, float(n), at(t))
     for n in range(200):
@@ -56,11 +56,11 @@ async def test_scan_ranks_the_trouble_it_finds(trouble):
     await file_tools.wpilog_open(trouble)
     out = text(await data_tools.wpilog_scan())
     flags = out["flags"]
-    assert flags[0].startswith("high: brownout flag") and any(f.startswith("high: battery fell to 6.5 V") for f in flags)
+    assert flags[0].startswith("high: brownout flag") and any(f.startswith("high: battery fell to 5.5 V") for f in flags)
     assert any("1 error(s)" in f for f in flags) and any("6 loop overrun" in f for f in flags)
     assert any("stopped early" in f and "/Fake/Stalled" in f for f in flags)
     assert [f.split(":")[0] for f in flags] == sorted((f.split(":")[0] for f in flags), key=["high", "med", "low"].index)
-    assert out["battery"]["min_v"] == 6.5 and out["battery"]["below_7v_s"] == pytest.approx(0.4, abs=0.05)
+    assert out["battery"]["min_v"] == 5.5 and out["battery"]["below_brownout_s"] == pytest.approx(0.4, abs=0.05)
     assert out["messages"]["overruns"] == 6 and out["messages"]["errors"] == 1
     assert "Alive" not in json.dumps(out["stopped_early"])
 
@@ -548,3 +548,24 @@ async def test_a_topic_ending_in_rec_outside_a_can_path_is_not_a_can_bus(log_dir
     w.save(log_dir / "norec.wpilog")
     await file_tools.wpilog_open("norec.wpilog")
     assert "can_bus" not in text(await data_tools.wpilog_scan())
+
+
+async def test_the_brownout_setting_is_read_from_the_log_and_the_default_is_labelled(log_dir):
+    def sag_log(name, with_setting):
+        w = LogWriter()
+        battery = w.start("NT:/SystemStats/BatteryVoltage", "double", '{"unit":"V"}', BASE)
+        for n in range(20):
+            w.append(battery, 6.2 if 5 <= n < 8 else 12.0, at(n))
+        if with_setting:
+            w.append(w.start("NT:/SystemStats/BrownoutVoltage", "double", "", BASE), 6.3, BASE)
+        w.save(log_dir / name)
+        return name
+
+    await file_tools.wpilog_open(sag_log("set.wpilog", True))
+    logged = text(await data_tools.wpilog_scan())
+    assert logged["battery"]["brownout_v"] == 6.3 and logged["battery"]["brownout_basis"] == "logged (/SystemStats/BrownoutVoltage)"
+    assert any(f.startswith("high: battery fell to 6.2 V") and "6.3 V brownout setting" in f for f in logged["flags"])
+    await file_tools.wpilog_open(sag_log("default.wpilog", False))
+    default = text(await data_tools.wpilog_scan())
+    assert default["battery"]["brownout_v"] == 6.0 and default["battery"]["brownout_basis"].startswith("default")
+    assert not any(f.startswith("high: battery fell") for f in default["flags"]) and any(f.startswith("med: battery fell to 6.2 V") for f in default["flags"])
