@@ -328,3 +328,13 @@ def test_bad_nt4_port_is_a_clear_error(monkeypatch):
             nt4_config.default_port()
     monkeypatch.setenv("NT4_PORT", "5820")
     assert nt4_config.default_port() == 5820
+
+
+async def test_a_read_of_topics_that_do_not_exist_says_no_match(client):
+    out = j(await client.call_tool("nt4_get_values", {"topics": ["/no/such/topic"], "wait_s": 0.2}))
+    assert out["status"] == "no_match" and "not proof" in out["hint"] and "err" in out["/no/such/topic"]
+
+
+async def test_a_widget_read_of_an_empty_path_says_no_match(client):
+    out = j(await client.call_tool("nt4_get_widgets", {"bases": ["/no/such/widget"], "wait_s": 0.2}))
+    assert out["status"] == "no_match" and "err" in out["/no/such/widget"]

@@ -5,7 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .errors import WPILogError
-from .logfile import LOCK, load
+from .logfile import CHANGED_ON_DISK, LOCK, load
 from .loglike import LogLike
 
 MAX_OPEN = 4
@@ -22,6 +22,7 @@ class OpenLogs:
         self._views: dict[str, list[str]] = {}  # synced view id -> the ids of the logs it is made of
         self._next_view = 1
         self._views_building = 0  # views being built right now, counted against MAX_VIEWS
+        self._reloaded: set[str] = set()  # ids of logs opened again because their file changed, until `take_reloaded` says so
         self._epoch = 0  # bumped by `reset`: a view still being built from before it must not touch the new counters
         self._lock = threading.RLock()  # guards the id table for every access, mutating or reading; reentrant so `get` and
         # `pick` can call `resolve` inside it. Indexing a big file happens outside it, which is what must not block.
@@ -46,6 +47,7 @@ class OpenLogs:
         """Take the log `log_id` and every synced view that depends on it out of the id table; return them for the caller
         to release after leaving the lock. Call while holding the lock, with `log_id` in the table."""
         gone = [self._logs.pop(log_id)]
+        self._reloaded.discard(log_id)
         self._views.pop(log_id, None)
         for view_id in [v for v, parts in self._views.items() if log_id in parts]:  # a view cannot outlive its logs
             del self._views[view_id]
@@ -80,6 +82,8 @@ class OpenLogs:
                 log_id = f"l{self._next}"
                 self._next += 1
                 self._logs[log_id] = log
+                if stale:  # a changed file replaced an open one: the caller says so once
+                    self._reloaded.add(log_id)
                 return log_id, log
         finally:
             for old in stale:  # outside the lock: release waits for a running query
@@ -100,9 +104,28 @@ class OpenLogs:
             return log_id
 
     def get(self, log_id: str | None = None) -> LogLike:
-        """The log with this id, or the newest one. Raises WPILogError as `resolve` does."""
+        """The log with this id, or the newest one. Raises WPILogError as `resolve` does, and when the file was replaced or shrank after it
+        was opened: answers from the old index would mix with the new file, so the call fails until `wpilog_open` reads it again.
+        A file that only grew (a log still being recorded) is served as it was indexed."""
         with self._lock:
-            return self._logs[self.resolve(log_id)]
+            log = self._logs[self.resolve(log_id)]
+        return self._unless_replaced(log)
+
+    @staticmethod
+    def _unless_replaced(log: LogLike) -> LogLike:
+        """`log`, or WPILogError when its file was replaced (a stat per file, so call it outside the lock when you can)."""
+        if log.is_replaced():
+            parts = getattr(log, "parts", None)  # a synced view names the file that changed, not itself
+            changed = [p.path.name for p in parts.values() if p.is_replaced()] if parts else [log.path.name]
+            raise WPILogError(CHANGED_ON_DISK.format(name=", ".join(changed)) + (f" Close {log.path.name} and sync again." if parts else ""))
+        return log
+
+    def take_reloaded(self, log_id: str) -> bool:
+        """Whether `log_id` was opened again because its file changed (true once, so the notice is said once)."""
+        with self._lock:
+            had = log_id in self._reloaded
+            self._reloaded.discard(log_id)
+            return had
 
     def pick(self, log_ids: list[str]) -> dict[str, LogLike]:
         """The logs with these ids (in the order given).
@@ -112,7 +135,8 @@ class OpenLogs:
         with self._lock:
             if len(set(log_ids)) != len(log_ids):
                 raise WPILogError("Give each log id once.")
-            return {log_id: self.get(log_id) for log_id in log_ids}
+            found = {log_id: self._logs[self.resolve(log_id)] for log_id in log_ids}
+        return {log_id: self._unless_replaced(log) for log_id, log in found.items()}
 
     def add_view(self, part_ids: list[str], make: Callable[[str, dict[str, LogLike]], LogLike]) -> tuple[str, LogLike]:
         """Register the view `make(view_id, parts)` builds over the open logs `part_ids`; it becomes the newest log.
@@ -182,6 +206,7 @@ class OpenLogs:
             held = list(self._logs.values())
             self._logs.clear()
             self._views.clear()
+            self._reloaded.clear()
             self._views_building = 0
             self._epoch += 1
             self._next = 1

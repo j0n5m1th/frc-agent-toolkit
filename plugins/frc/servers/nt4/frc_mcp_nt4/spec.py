@@ -1,7 +1,7 @@
 """The NT4 server's `SPEC`: what it is, its `check`, its command line (`frc-mcp nt4`), and what follows the toolset.
 
 Importing this module imports no tool and no `ntcore`, and builds no server. NT4_TOOLSET=core hides the capture and write
-tools; `SPEC.serve()` reads the setting at start and `apply_toolset()` re-reads it. Module layout: docs/ARCHITECTURE.md.
+tools; `SPEC.serve()` reads the setting at start and `apply_toolset()` re-reads it. Module layout: docs/ARCHITECTURE_SERVERS.md.
 """
 
 import argparse
@@ -89,8 +89,8 @@ SPEC = ServerSpec(
     toolset=config.TOOLSET,
     gates={gate_tag(config.allow_writes.env_name): config.writes_possible},  # the write tools are hidden until writes are on (and not read-only)
     tool_modules=(
-        "frc_mcp_nt4.prompts_resources", "frc_mcp_nt4.tools.capture_tools", "frc_mcp_nt4.tools.capture_watch_tools", "frc_mcp_nt4.tools.connection_tools",
-        "frc_mcp_nt4.tools.discovery_tools", "frc_mcp_nt4.tools.health_tools", "frc_mcp_nt4.tools.read_tools", "frc_mcp_nt4.tools.write_tools",
+        "frc_mcp_nt4.prompts_resources", "frc_mcp_nt4.tools.capture_tools", "frc_mcp_nt4.tools.capture_watch_tools", "frc_mcp_nt4.tools.check_tools", "frc_mcp_nt4.tools.connection_tools",
+        "frc_mcp_nt4.tools.discovery_tools", "frc_mcp_nt4.tools.health_tools", "frc_mcp_nt4.tools.read_tools", "frc_mcp_nt4.tools.scan_tools", "frc_mcp_nt4.tools.swerve_tools", "frc_mcp_nt4.tools.write_tools",
     ),
     check=_check,
     doctor_skip="it connects to NT4_HOST, which may be a real robot",

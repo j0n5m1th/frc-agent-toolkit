@@ -5,6 +5,7 @@ from typing import Any, Protocol
 
 from fastmcp import FastMCP
 
+from .learn import LearnTips
 from .tools import SlimToolList
 from .toolset import Toolset, ToolsetName, set_toolset_visibility
 
@@ -20,6 +21,7 @@ def new_server(name: str, instructions: str, *, slim: SlimToolList | None = None
     """
     options.setdefault("mask_error_details", True)
     mcp = FastMCP(name, instructions=instructions, **options)
+    mcp.add_middleware(LearnTips())  # adds a tip to a reply only while learning mode is on
     mcp.add_middleware(slim or SlimToolList())
     return mcp
 

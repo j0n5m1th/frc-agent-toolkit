@@ -33,7 +33,7 @@ States: `idle`, `building`, `starting`, `ready`, `exited`, `stopped`, `timed_out
 
 ## Settings and safety
 
-Full list: [SETTINGS](SETTINGS.md#every-other-setting). The ones that matter: `SIM_PROJECT_DIR` (folders your robot projects live in; nothing outside runs), `SIM_TASK` (default `simulateJava`; `run` for a 2027 project, where `simulateJava` was removed), `SIM_NT_PORT` (5810; a start is refused if it is already open), `SIM_MAX_RUN_S` (1800) and `SIM_TOOLSET`. There is no `ALLOW` switch: the project folder is the boundary ([SETTINGS: Safety](SETTINGS.md#tools-without-a-switch)).
+Full list: [SETTINGS](SETTINGS.md#every-other-setting). The ones that matter: `SIM_PROJECT_DIR` (folders your robot projects live in; nothing outside runs), `SIM_TASK` (default `simulateJava`; `run` for a 2027 project, where `simulateJava` was removed), `SIM_NT_PORT` (5810; a start is refused if it is already open), `SIM_MAX_RUN_S` (1800) and `SIM_TOOLSET`. There is no `ALLOW` switch: the project folder is the boundary ([SETTINGS: Safety](SAFETY.md#tools-without-a-switch)).
 
 - Only `run` and Gradle tasks named `simulate...` run. `build` and `deploy` are refused.
 - Options are plain `name=value` with no spaces or quotes.

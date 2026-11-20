@@ -2,7 +2,7 @@
 
 `wpilog_sync` finds the offset that turns each log's time into the first log's time. Methods: `enable` (line up the
 enable/disable edges, error is tens of ms), `clock` (wall-clock times, a fallback or a cross-check), `manual` (the caller
-gives each offset). Why edges come first: docs/ARCHITECTURE.md.
+gives each offset). Why edges come first: docs/ARCHITECTURE_NOTES.md.
 """
 
 import bisect
@@ -249,6 +249,9 @@ class SyncedLog:
 
     def is_current(self) -> bool:
         return all(p.is_current() for p in self.parts.values())
+
+    def is_replaced(self) -> bool:
+        return any(p.is_replaced() for p in self.parts.values())
 
 
 def build(view_id: str, parts: dict[str, LogLike], method: Method, offsets_ms: list[float] | None) -> tuple[SyncedLog, list[Placement]]:

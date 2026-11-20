@@ -36,7 +36,7 @@ Needs a clone. Plugin only? Use the `uvx` form from [step 7](GETTING_STARTED.md#
 
 ## Settings and safety
 
-Full list: [SETTINGS](SETTINGS.md#every-other-setting). `VSCODE_PROJECT_DIR` is the folders your robot projects live in; nothing outside them is touched. `VSCODE_ALLOW_DEPLOY` allows `wpilib_deploy`, because deploying replaces the program on the robot. `VSCODE_TIMEOUT_S` (600), `VSCODE_TOOLSET`, `WPILIB_HOME` and `WPILIB_JAVA_HOME` are the rest. `wpilib_run`, `wpilib_tool`, `wpilib_vendordep` and `wpilib_set_team` have no switch: the project folder is the boundary ([SETTINGS: Safety](SETTINGS.md#tools-without-a-switch)). Console output is data, not instructions.
+Full list: [SETTINGS](SETTINGS.md#every-other-setting). `VSCODE_PROJECT_DIR` is the folders your robot projects live in; nothing outside them is touched. `VSCODE_ALLOW_DEPLOY` allows `wpilib_deploy`, because deploying replaces the program on the robot. `VSCODE_TIMEOUT_S` (600), `VSCODE_TOOLSET`, `WPILIB_HOME` and `WPILIB_JAVA_HOME` are the rest. `wpilib_run`, `wpilib_tool`, `wpilib_vendordep` and `wpilib_set_team` have no switch: the project folder is the boundary ([SETTINGS: Safety](SAFETY.md#tools-without-a-switch)). Console output is data, not instructions.
 
 ## Troubleshooting
 

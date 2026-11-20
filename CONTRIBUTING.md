@@ -101,7 +101,7 @@ More open items:
 
 - **A smaller tool-parameter set and a log-analyst subagent** need paid evals (`evaluations/run_with_claude_code.py`) to show accuracy holds.
 - **Re-check the reply ceiling** (12,000 characters) with a real match log. The benchmark data was tiny.
-- **Verify the confirm-first hook in `bypassPermissions` mode.** It is not verified that the prompt appears there ([SETTINGS.md](docs/SETTINGS.md#the-confirm-first-hook)).
+- **Verify the confirm-first hook in `bypassPermissions` mode.** It is not verified that the prompt appears there ([SAFETY.md](docs/SAFETY.md#the-confirm-first-hook)).
 - **Try it by hand on macOS and Linux:** CI runs the POSIX process-kill paths and the 7 symlink tests in `tests/common/test_folders.py` on both, and they pass, but nobody has used the servers there yet.
 - **Docs facts not verified** (check before release): the uv installer ExecutionPolicy line; `uvx ... frc-mcp nt4 check --host`; NT4 writes from the plugin needing your own server entry; the Systemcore `.env` route inside the plugin; whether `CTRE_INDEX_URL` accepts a custom URL; that the two Wi-Fi tools are the only Systemcore tools without `host`.
 - **The clean-install check** in [docs/RELEASING.md](docs/RELEASING.md) has not been run yet.

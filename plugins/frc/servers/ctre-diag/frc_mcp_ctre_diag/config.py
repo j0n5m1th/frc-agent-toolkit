@@ -1,7 +1,7 @@
 """Settings of the Phoenix Diagnostic Server reader (DIAG_*), read at call time. The list is in docs/SETTINGS.md.
 The default host 172.30.0.1 is the Systemcore on its own Wi-Fi (USB is 172.26.0.1 on Windows, 172.27.0.1 on Linux/macOS); the
 port 1250 was seen on a Systemcore. Only private, loopback and link-local addresses are contacted unless DIAG_ALLOW_ANY_HOST=1.
-Nothing here changes a device: only reads and an LED blink are sent (docs/CTRE.md lists the actions never sent).
+Nothing here changes a device: only reads and an LED blink are sent (docs/CTRE_DEVICES.md lists the actions never sent).
 """
 
 from frc_mcp_core.settings import env_flag, env_number, env_str

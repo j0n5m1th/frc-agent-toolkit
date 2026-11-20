@@ -6,10 +6,9 @@ import re
 from pathlib import Path
 
 import pytest
-from fastmcp import Client
+from tool_listing import all_tools
 
-from frc_mcp_core import command
-from frc_mcp_core.toolset import GATED_TAG, set_gate_visibility
+from frc_mcp_core.toolset import GATED_TAG
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = ROOT / "plugins" / "frc" / "skills"
@@ -23,19 +22,6 @@ SETTING_WORDS = ("Allow", "settings", "/config")
 
 def skill_texts(skill: Path) -> dict[Path, str]:
     return {path: path.read_text(encoding="utf-8") for path in sorted(skill.rglob("*")) if path.is_file() and path.suffix == ".md"}
-
-
-async def all_tools() -> dict[str, set[str]]:
-    """Tool name -> tags, over every server with every switch on and the full toolset. Visibility is left all-on, as `spec.load()` hands it out."""
-    found: dict[str, set[str]] = {}
-    for key in command.server_keys():
-        spec = command.load_spec(key)
-        mcp, _ = spec.load()
-        set_gate_visibility(mcp, dict.fromkeys(spec.gates, True), core=False)
-        async with Client(mcp) as client:
-            for tool in await client.list_tools():
-                found[tool.name] = set(tool.meta.get("fastmcp", {}).get("tags", []) if tool.meta else [])
-    return found
 
 
 @pytest.fixture(scope="module")

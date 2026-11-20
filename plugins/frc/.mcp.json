@@ -15,7 +15,8 @@
       ],
       "env": {
         "NT4_HOST": "${user_config.nt4_host}",
-        "NT4_READ_ONLY": "${user_config.nt4_read_only}"
+        "NT4_READ_ONLY": "${user_config.nt4_read_only}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "wpilog": {
@@ -33,7 +34,8 @@
       ],
       "env": {
         "WPILOG_DIR": "${CLAUDE_PROJECT_DIR}",
-        "WPILOG_ALLOW_OUTSIDE": "${user_config.read_outside_logs}"
+        "WPILOG_ALLOW_OUTSIDE": "${user_config.read_outside_logs}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "sim": {
@@ -50,7 +52,8 @@
         "sim"
       ],
       "env": {
-        "SIM_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}"
+        "SIM_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "vscode": {
@@ -68,7 +71,8 @@
       ],
       "env": {
         "VSCODE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}",
-        "VSCODE_ALLOW_DEPLOY": "${user_config.allow_deploy}"
+        "VSCODE_ALLOW_DEPLOY": "${user_config.allow_deploy}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "jfr": {
@@ -86,7 +90,8 @@
       ],
       "env": {
         "JFR_DIR": "${CLAUDE_PROJECT_DIR}",
-        "JFR_ALLOW_RECORD": "${user_config.allow_record}"
+        "JFR_ALLOW_RECORD": "${user_config.allow_record}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "systemcore": {
@@ -107,7 +112,8 @@
         "SYSTEMCORE_ALLOW_PRUNE": "${user_config.allow_prune}",
         "SYSTEMCORE_ALLOW_PROVISION": "${user_config.allow_provision}",
         "SYSTEMCORE_ALLOW_WIFI_JOIN": "${user_config.allow_wifi_join}",
-        "SYSTEMCORE_ALLOW_RESTART": "${user_config.allow_restart}"
+        "SYSTEMCORE_ALLOW_RESTART": "${user_config.allow_restart}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "ctre-tools": {
@@ -125,7 +131,8 @@
       ],
       "env": {
         "CTRE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}",
-        "CTRE_ALLOW_INSTALL": "${user_config.allow_ctre_install}"
+        "CTRE_ALLOW_INSTALL": "${user_config.allow_ctre_install}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "ctre-owlet": {
@@ -142,7 +149,8 @@
         "ctre-owlet"
       ],
       "env": {
-        "OWLET_DIR": "${CLAUDE_PROJECT_DIR}"
+        "OWLET_DIR": "${CLAUDE_PROJECT_DIR}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "ctre-passerine": {
@@ -159,7 +167,8 @@
         "ctre-passerine"
       ],
       "env": {
-        "PASSERINE_DIR": "${CLAUDE_PROJECT_DIR}"
+        "PASSERINE_DIR": "${CLAUDE_PROJECT_DIR}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "ctre-caniv": {
@@ -177,7 +186,8 @@
       ],
       "env": {
         "CANIV_ALLOW_CONFIG": "${user_config.allow_caniv_config}",
-        "CANIV_ALLOW_FLASH": "${user_config.allow_caniv_flash}"
+        "CANIV_ALLOW_FLASH": "${user_config.allow_caniv_flash}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     },
     "ctre-diag": {
@@ -194,7 +204,8 @@
         "ctre-diag"
       ],
       "env": {
-        "DIAG_HOST": "${user_config.diag_host}"
+        "DIAG_HOST": "${user_config.diag_host}",
+        "FRC_LEARNING_MODE": "${user_config.learning_mode}"
       }
     }
   }

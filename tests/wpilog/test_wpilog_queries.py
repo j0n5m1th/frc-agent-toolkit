@@ -252,10 +252,10 @@ def test_also_rejects_what_it_cannot_answer(sample):
 
 def test_a_rate_every_topic_shares_is_said_once_under_all(sample):
     out = ask(sample, [CURRENT, "/Fake/Drive/Pose"])  # both are logged at 10 Hz
-    assert out["all"] == {"capture_rate_hz": 10.0}
+    assert out["all"] == {"capture_rate_hz": 10.0, "sampling": "periodic"}
     assert all("capture_rate_hz" not in v for v in out["data"].values())
     mixed = ask(sample, [CURRENT, "/Fake/Arm/Angle"])  # 10 Hz and 2 Hz: each keeps its own
-    assert "all" not in mixed and mixed["data"][CURRENT]["capture_rate_hz"] == 10.0
+    assert "capture_rate_hz" not in mixed.get("all", {}) and mixed["data"][CURRENT]["capture_rate_hz"] == 10.0
 
 
 def test_message_topics_are_found_by_a_keyword_anywhere_in_the_name(tmp_path):

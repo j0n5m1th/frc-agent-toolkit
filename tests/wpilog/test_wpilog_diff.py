@@ -144,3 +144,17 @@ def test_a_setting_the_other_log_declared_but_never_logged_counts_as_only_in(tmp
     out = queries.diff({"l1": first, "l2": second}, "/Tune/", None, 50)
     assert out["only_in"] == {"l1": ["/Tune/Tuned"]} and "changed" not in out
 
+
+
+def test_a_diff_says_when_the_two_logs_come_from_different_code_even_with_a_filter(tmp_path):
+    def with_sha(name, sha):
+        w = LogWriter()
+        w.append(w.start("/RealMetadata/GitSHA", "string", "", BASE), sha, BASE)
+        w.append(w.start("NT:/Tune/P", "double", "", BASE), 1.0, BASE)
+        return LogFile(w.save(tmp_path / name))
+
+    a, b = with_sha("a.wpilog", "aaa111"), with_sha("b.wpilog", "bbb222")
+    out = diff_queries.diff({"l1": a, "l2": b}, "/Tune", None, 50)  # the filter hides the metadata topics from `changed`
+    assert out["code"] == {"l1": {"GitSHA": "aaa111"}, "l2": {"GitSHA": "bbb222"}} and "different code" in out["warning"]
+    assert "code" not in diff_queries.diff({"l1": a, "l2": with_sha("c.wpilog", "aaa111")}, "/Tune", None, 50)
+    assert diff_queries.diff({"l1": a, "l2": with_sha("d.wpilog", "bbb222")}, "/Tune", None, 50)["code"]["l1"] == {"GitSHA": "aaa111"}

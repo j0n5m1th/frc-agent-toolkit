@@ -2,29 +2,29 @@
  "nt4": {
   "full": {
    "gates-off": {
-    "tools": 12,
-    "names": 131,
-    "defs": 3265,
+    "tools": 18,
+    "names": 193,
+    "defs": 4169,
     "instructions": 48
    },
    "gates-on": {
-    "tools": 14,
-    "names": 155,
-    "defs": 3685,
+    "tools": 20,
+    "names": 217,
+    "defs": 4589,
     "instructions": 48
    }
   },
   "core": {
    "gates-off": {
-    "tools": 9,
-    "names": 95,
-    "defs": 2032,
+    "tools": 11,
+    "names": 115,
+    "defs": 2287,
     "instructions": 36
    },
    "gates-on": {
-    "tools": 9,
-    "names": 95,
-    "defs": 2032,
+    "tools": 11,
+    "names": 115,
+    "defs": 2287,
     "instructions": 36
    }
   }
@@ -32,29 +32,29 @@
  "wpilog": {
   "full": {
    "gates-off": {
-    "tools": 11,
-    "names": 124,
-    "defs": 2574,
+    "tools": 16,
+    "names": 182,
+    "defs": 3868,
     "instructions": 62
    },
    "gates-on": {
-    "tools": 11,
-    "names": 124,
-    "defs": 2574,
+    "tools": 16,
+    "names": 182,
+    "defs": 3868,
     "instructions": 62
    }
   },
   "core": {
    "gates-off": {
-    "tools": 8,
-    "names": 91,
-    "defs": 2109,
+    "tools": 9,
+    "names": 103,
+    "defs": 2374,
     "instructions": 54
    },
    "gates-on": {
-    "tools": 8,
-    "names": 91,
-    "defs": 2109,
+    "tools": 9,
+    "names": 103,
+    "defs": 2374,
     "instructions": 54
    }
   }

@@ -6,6 +6,7 @@ since the aligned origin (see `timeline.py`).
 """
 
 import functools
+import hashlib
 import itertools
 import json
 import logging
@@ -35,6 +36,7 @@ MAX_CACHED_ROWS = 4_000_000  # rows kept across questions, over all open logs to
 PRELOAD_ROWS_PER_TOPIC = 2000  # topics with at most this many updates are read while indexing, so questions about them need no second pass
 PRELOAD_TOTAL_ROWS = 600_000  # and at most this many rows in all
 _HEADER_BYTES = 12  # "WPILOG", the 2-byte version and the 4-byte length of the extra header text
+CHANGED_ON_DISK = "{name} changed on disk since it was opened; call wpilog_open on it again."
 _NUMBER_TYPES = frozenset({"double", "float", "int64"})  # a topic restarted among these still reads as numbers
 SCHEMA_TYPES = ("structschema",)  # plus protobuf descriptors, whose type starts with "proto:"
 
@@ -98,6 +100,11 @@ class Topic:
     last_us: int | None = None
     mixed_types: tuple[str, ...] = ()  # every log type the name was started with, when they are not one number kind
 
+    @property
+    def is_numeric(self) -> bool:
+        """A single number per update (`type_str` is the NetworkTables spelling, so a WPILOG int64 is `int`)."""
+        return self.type_str in ("double", "float", "int")
+
     def unusable_for(self, what: str) -> str | None:
         """Why `what` cannot be computed from this topic's rows, or None: a name restarted with another type holds values of
         several types under one type string, which no reduction can read."""
@@ -147,6 +154,19 @@ def _stamp_of(paths: list[Path]) -> tuple[tuple[int, int], ...]:
     return tuple((info.st_size, info.st_mtime_ns) for info in (p.stat() for p in paths))
 
 
+HEAD_BYTES = 65536  # how much of the start of a file is remembered, to tell a log that grew from one that was replaced
+
+
+def _heads_of(paths: list[Path], sizes: list[int]) -> tuple[tuple[int, bytes], ...]:
+    """For each file, how many of its first bytes are checked (at most `HEAD_BYTES`, never past `sizes`) and their hash."""
+    out = []
+    for path, size in zip(paths, sizes, strict=True):
+        length = min(size, HEAD_BYTES)
+        with path.open("rb") as f:
+            out.append((length, hashlib.blake2b(f.read(length), digest_size=8).digest()))
+    return tuple(out)
+
+
 def busiest_topics(topics: dict[str, Topic], limit: int = 5) -> list[tuple[str, int]]:
     """The visible topics with the most updates, as (name, count), most first."""
     visible = [t for t in topics.values() if not t.hidden]
@@ -187,6 +207,7 @@ class LogFile:
         self.size_bytes = sum(p.stat().st_size for p in self._sources)
         self._data_bytes = len(data) if data is not None else self.size_bytes
         self._stamp = _stamp_of(self._sources)
+        self._heads = _heads_of(self._sources, [size for size, _ in self._stamp])
         self.topics: dict[str, Topic] = {}
         self.schemas: dict[str, bytes] = {}  # "/.schema/struct:Pose2d" -> schema text or descriptor bytes
         self.records = 0
@@ -429,6 +450,19 @@ class LogFile:
         _OPEN_FILES.discard(self)
         schema_state.forget(self._schema_owner)  # only clears when these are still this log's schemas
 
+    def is_replaced(self) -> bool:
+        """Whether the file is no longer the one that was indexed. A log still being recorded only grows, and the index keeps to the records
+        it saw, so growth is not replacement; a file that shrank, or whose start differs, is."""
+        try:
+            now = _stamp_of(self._sources)
+            if now == self._stamp:
+                return False
+            if any(new < old for (new, _), (old, _) in zip(now, self._stamp, strict=True)):
+                return True
+            return _heads_of(self._sources, [size for size, _ in self._stamp]) != self._heads
+        except OSError:
+            return True
+
     # -- rows ----------------------------------------------------------------------------------------------
     @serialized
     def rows(self, names: Iterable[str]) -> dict[str, Rows]:
@@ -437,8 +471,8 @@ class LogFile:
         wanted = [n for n in dict.fromkeys(names) if n in self.topics]
         missing = [n for n in wanted if n not in self._cache]
         if missing:
-            if self._data is None and not self.is_current():  # a read of the file would not match the index made from it
-                raise WPILogError(f"{self.path.name} changed on disk since it was opened; call wpilog_open on it again.")
+            if self._data is None and self.is_replaced():  # a read of the file would not match the index made from it
+                raise WPILogError(CHANGED_ON_DISK.format(name=self.path.name))
             self._load(missing)
         for name in wanted:
             self._cache.move_to_end(name)

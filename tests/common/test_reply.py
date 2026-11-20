@@ -142,3 +142,10 @@ def test_halving_keeps_the_whole_reply_including_the_added_fields_within_the_cap
         text = reply_halving(data, cap).content[0].text
         assert len(text) <= cap, (cap, len(text))
         assert json.loads(text)["truncated"] is True
+
+
+def test_no_match_says_nothing_was_checked_and_why_beside_the_facts():
+    from frc_mcp_core.reply import no_match
+
+    out = no_match({"pose": "/A"}, "too few updates")
+    assert out["status"] == "no_match" and out["reason"] == "too few updates" and out["pose"] == "/A"

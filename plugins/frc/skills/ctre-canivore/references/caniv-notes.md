@@ -1,6 +1,6 @@
 # CANivore notes
 
-Read this when a `caniv_*` tool gives an error, or you need to explain what a tool does. Facts come from `docs/CTRE.md`. "Seen" means seen on a real CANivore; "vendor" means a CTRE document.
+Read this when a `caniv_*` tool gives an error, or you need to explain what a tool does. Facts come from `docs/CTRE_DEVICES.md`. "Seen" means seen on a real CANivore; "vendor" means a CTRE document.
 
 ## What each tool does
 

@@ -359,3 +359,59 @@ def test_a_failed_sync_after_a_reset_does_not_leave_a_negative_count(tmp_path):
     with pytest.raises(WPILogError, match="cannot sync"):
         opened.add_view(["l1", "l2"], reset_then_fail)
     assert opened._views_building == 0 and opened._next_view == 1
+
+
+def test_an_open_log_that_was_replaced_refuses_queries_until_it_is_opened_again(tmp_path):
+    (path,) = paths(tmp_path, 1)
+    opened = OpenLogs()
+    log_id, _ = opened.open(path)
+    assert opened.get(log_id) and not opened.take_reloaded(log_id)
+    path.write_bytes(path.read_bytes()[:-3])  # replaced by a shorter file
+    with pytest.raises(WPILogError, match="changed on disk since it was opened; call wpilog_open"):
+        opened.get(log_id)
+    with pytest.raises(WPILogError, match="changed on disk"):
+        opened.pick([log_id])
+    again, fresh = opened.open(path)  # opening again reads the new file
+    assert again != log_id and opened.get(again) is fresh  # the old id is gone and the new file has a new one
+    with pytest.raises(WPILogError, match=f"No open log '{log_id}'"):
+        opened.get(log_id)
+
+
+def test_opening_a_changed_file_again_says_so_once(tmp_path):
+    (path,) = paths(tmp_path, 1)
+    opened = OpenLogs()
+    opened.open(path)
+    path.write_bytes(path.read_bytes()[:-3])
+    log_id, _ = opened.open(path)
+    assert opened.take_reloaded(log_id) is True and opened.take_reloaded(log_id) is False
+
+
+def test_a_changed_log_can_still_be_closed(tmp_path):
+    (path,) = paths(tmp_path, 1)
+    opened = OpenLogs()
+    log_id, _ = opened.open(path)
+    path.write_bytes(path.read_bytes()[:-3])
+    assert opened.close(log_id) == log_id and opened.ids == []
+
+
+def test_an_open_log_that_only_grew_is_still_served_and_reopening_it_says_it_was_read_again(tmp_path):
+    (path,) = paths(tmp_path, 1)
+    opened = OpenLogs()
+    log_id, _ = opened.open(path)
+    path.write_bytes(path.read_bytes() + b"\x00")  # a log still being recorded
+    assert opened.get(log_id)
+    again, _ = opened.open(path)
+    assert opened.take_reloaded(again) is True
+
+
+def test_a_synced_view_names_the_file_that_was_replaced_not_itself(tmp_path):
+    from frc_mcp_wpilog import sync
+
+    one, two = paths(tmp_path, 2)
+    opened = OpenLogs()
+    opened.open(one)
+    opened.open(two)
+    view_id, _ = opened.add_view(["l1", "l2"], lambda vid, parts: sync.build(vid, parts, "auto", [0.0])[0])
+    one.write_bytes(one.read_bytes()[:-3])
+    with pytest.raises(WPILogError, match=r"s0\.wpilog changed on disk.*Close s1 and sync again"):
+        opened.get(view_id)

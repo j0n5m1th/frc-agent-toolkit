@@ -44,12 +44,12 @@ The first start can take a minute. All servers start on, and each one costs toke
 
 ## Safe by default
 
-Most tools only read. A tool that changes the robot or a device is off until you turn on a switch, and Claude Code asks first. Building and simulating run your project's own Gradle commands, and a few tools save or edit files without a switch ([list](docs/SETTINGS.md#tools-without-a-switch)). Read [Safety](docs/SETTINGS.md#safety) before turning any switch on.
+Most tools only read. A tool that changes the robot or a device is off until you turn on a switch, and Claude Code asks first. Building and simulating run your project's own Gradle commands, and a few tools save or edit files without a switch ([list](docs/SAFETY.md#tools-without-a-switch)). Read [Safety](docs/SAFETY.md#safety) before turning any switch on.
 
 ## More
 
 - [Getting started](docs/GETTING_STARTED.md): Windows install, the demo, a real robot, other assistants
-- [Settings and safety](docs/SETTINGS.md): every setting in one table
+- [Settings](docs/SETTINGS.md): every setting in one table
 - [FAQ](docs/FAQ.md): common problems
 - [Contributing](CONTRIBUTING.md): tests, feedback, how the code is laid out
 - [Security](SECURITY.md): how to report a problem privately

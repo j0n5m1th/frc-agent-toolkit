@@ -50,7 +50,7 @@ async def wpilog_open(path: Annotated[str, Field(description="File name or path 
     """Open a log: duration, when the robot was enabled (auto/teleop/test), match info and the busiest topics. Becomes the default log. Reopening a file that changed on disk re-reads it. A path outside the project asks you first."""
     resolved = config.resolve_log(path)
     log_id, log = await asyncio.to_thread(logs.open, resolved)
-    return reply(await asyncio.to_thread(overview, log, log_id))
+    return reply(await asyncio.to_thread(overview, log, log_id, logs.take_reloaded(log_id)))
 
 
 @mcp.tool(annotations={**READ_ONLY_LOCAL, "title": "Close log"}, output_schema=None, tags={FULL_ONLY_TAG})

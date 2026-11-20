@@ -102,6 +102,12 @@
       "title": "Allow flashing CANivore firmware",
       "description": "On: the assistant may flash firmware onto a CANivore (it asks you first). Applies to every project, so turn it off after use.",
       "default": false
+    },
+    "learning_mode": {
+      "type": "boolean",
+      "title": "Learning mode",
+      "description": "On: some tool replies add a short tip, such as why something works or something interesting, to help a student learn what they are looking at. Off: short answers only. Applies to every project.",
+      "default": false
     }
   }
 }

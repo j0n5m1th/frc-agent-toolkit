@@ -12,11 +12,11 @@ _, apply_toolset = SPEC.load()
 FULL_TOOLS = {
     "nt4_connection", "nt4_status", "nt4_list_topics", "nt4_inspect", "nt4_health", "nt4_get_values",
     "nt4_get_widgets", "nt4_wait_for", "nt4_capture_start", "nt4_capture_query", "nt4_capture_stop", "nt4_watch",
-    "nt4_set_value", "nt4_release_publisher",
+    "nt4_swerve", "nt4_scan", "nt4_power", "nt4_mechanism", "nt4_correlate", "nt4_pose", "nt4_set_value", "nt4_release_publisher",
 }
 
 
-FULL_ONLY_TOOLS = {"nt4_capture_start", "nt4_capture_query", "nt4_capture_stop", "nt4_set_value", "nt4_release_publisher"}
+FULL_ONLY_TOOLS = {"nt4_capture_start", "nt4_capture_query", "nt4_capture_stop", "nt4_set_value", "nt4_release_publisher", "nt4_power", "nt4_mechanism", "nt4_correlate", "nt4_pose"}
 
 
 async def test_full_only_tag_marks_exactly_the_capture_and_write_tools():
