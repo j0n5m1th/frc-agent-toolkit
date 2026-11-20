@@ -5,6 +5,7 @@ A list of `(int, float)` tuples costs about 120 bytes a row, two `array`s cost 1
 """
 
 import itertools
+import math
 import operator
 from array import array
 from collections.abc import Iterable, Iterator, Sequence
@@ -17,6 +18,11 @@ Rows = Sequence[LogRow]  # what a topic's rows are: a list of rows, or `NumberRo
 # decode to Python floats, so they share the `double` storage without changing a value.
 _FLOAT_TYPES = frozenset({"double", "float"})
 _INT_TYPES = frozenset({"int64"})
+
+
+def finite_numbers(rows: Iterable[LogRow]) -> list[LogRow]:
+    """The rows whose value is a finite number (no text, no NaN or infinity), which a sort, a max or a percentile can take."""
+    return [r for r in rows if isinstance(r[1], (int, float)) and math.isfinite(float(r[1]))]
 
 
 def compact_kind(log_types: Iterable[str]) -> str | None:

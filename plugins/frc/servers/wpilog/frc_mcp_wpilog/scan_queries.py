@@ -5,7 +5,6 @@ stopped before the log ended, and how often the robot was enabled. Each check sa
 quiet reply is never mistaken for a clean log.
 """
 
-import math
 import re
 from collections import Counter
 from collections.abc import Callable, Sequence
@@ -15,7 +14,8 @@ from frc_mcp_wpilib.reduce.stats import US_PER_S
 
 from .logfile import Topic, serialized
 from .loglike import LogLike
-from .rows import LogRow, Rows
+from .loop_can_checks import can_check, counter_topics, loop_check, loop_topics
+from .rows import LogRow, Rows, finite_numbers
 from .signal_roles import Choice, battery_choice, brownout_choice
 from .text_queries import text_topics
 from .timeline import origin_us, phases
@@ -26,8 +26,8 @@ MIN_SILENT_S = 10.0
 MANY_STOPPED = 5  # this many signals stopping early is read as one cause, not several faults
 MANY_ENABLES = 6  # more enabled periods than this in one log is worth a look
 MAX_EXAMPLES = 3
-LINK = (("packet_loss_pct", ("packetloss",), 5.0), ("trip_ms", ("tripti",), 100.0), ("can_util_pct", ("can", "util"), 80.0), ("cpu_pct", ("cpu", "util"), 90.0))
-FRACTION_LABELS = ("can_util_pct", "cpu_pct")  # a SystemStats topic may be a 0-1 fraction (assumed, not seen on a real match log); the Driver Station log is percent
+LINK = (("packet_loss_pct", ("packetloss",), 5.0), ("trip_ms", ("tripti",), 100.0), ("cpu_pct", ("cpu", "util"), 90.0))
+FRACTION_LABELS = ("cpu_pct",)  # a SystemStats topic may be a 0-1 fraction (assumed, not seen on a real match log); the Driver Station log is percent
 _NUMBER = re.compile(r"\d+(\.\d+)?")
 _ERROR_WORD = re.compile(r"\b(?:error|fault|exception)s?\b")  # whole words: "default" is not a fault
 
@@ -46,7 +46,7 @@ def _pick(visible: Visible, *words: str) -> list[Topic]:
 
 
 def _numbers(rows: TopicRows, topic: Topic) -> list[LogRow]:
-    return [r for r in rows[topic.name] if isinstance(r[1], (int, float)) and math.isfinite(float(r[1]))]
+    return finite_numbers(rows[topic.name])
 
 
 def _held_s(rows: Sequence[LogRow], end_us: int, *tests: Callable[[Any], bool]) -> list[float]:
@@ -193,7 +193,11 @@ def scan(log: LogLike, battery_topic: str | None = None) -> dict[str, Any]:
     battery = battery_choice(shown, battery_topic, log.topics)
     browned = brownout_choice(shown)
     links = {label: _pick(visible, *words)[:1] for label, words, _ in LINK}
-    wanted = [*text_names, *(t.name for t in battery.topics), *(t.name for t in browned.topics), *(t.name for found in links.values() for t in found)]
+    full_loop, user_loop, loop_names = loop_topics(shown)
+    buses = counter_topics(shown)
+    loop_used = [t for t in (full_loop, user_loop) if t is not None]
+    wanted = [*text_names, *(t.name for t in battery.topics), *(t.name for t in browned.topics), *(t.name for found in links.values() for t in found),
+              *(t.name for t in loop_used), *(t.name for fields in buses.values() for t in fields.values())]
     rows = log.rows(list(dict.fromkeys(wanted)))  # one pass over the file for every topic the checks read
     found = phases(log)
     align = "auto" if any(p.mode == "auto" for p in found) else "enable" if found else "start"
@@ -212,6 +216,12 @@ def scan(log: LogLike, battery_topic: str | None = None) -> dict[str, Any]:
     out.update(power)
     flags += more
     out["link"], more = _link(rows, links)
+    flags += more
+    out["loop"], more = loop_check(rows, full_loop, user_loop, loop_names, found)
+    flags += more
+    can_rows, more = can_check(rows, buses, found)
+    if can_rows:
+        out["can_bus"] = can_rows
     flags += more
     silent, more = _silent(log, visible, origin)
     if silent:

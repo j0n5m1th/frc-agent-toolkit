@@ -229,7 +229,7 @@ def _per_column(columns: dict[str, Column], shaper: Shaper, rows: list[MsRow], s
     return {**type_field(shaper.type_str), "n": len(rows), "fields": {key: stats(col) for key, col in columns.items()}}
 
 
-def _percentile(ordered: list[float], q: float) -> float:
+def percentile(ordered: list[float], q: float) -> float:
     """The q-th percentile (0-100) of an ascending list, interpolating between neighbours."""
     pos = (len(ordered) - 1) * q / 100
     low = int(pos)
@@ -249,9 +249,9 @@ def _percentiles(rows: list[MsRow], segments: list[Segment], shaper: Shaper) -> 
         return {
             **({"non_finite": skipped} if skipped else {}),
             "min": round(ordered[0], digits),
-            "p50": round(_percentile(ordered, 50), digits),
-            "p95": round(_percentile(ordered, 95), digits),
-            "p99": round(_percentile(ordered, 99), digits),
+            "p50": round(percentile(ordered, 50), digits),
+            "p95": round(percentile(ordered, 95), digits),
+            "p99": round(percentile(ordered, 99), digits),
             "max": round(ordered[-1], digits),
         }
 

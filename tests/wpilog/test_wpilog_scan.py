@@ -218,7 +218,7 @@ async def test_can_utilization_as_a_fraction_is_read_as_percent(log_dir):
     w.save(log_dir / "can.wpilog")
     await file_tools.wpilog_open("can.wpilog")
     out = text(await data_tools.wpilog_scan())
-    assert out["link"]["can_util_pct"] == 90.0 and any("can_util_pct" in f for f in out["flags"])
+    assert out["can_bus"] == [{"bus": "CANBus", "util_max_pct": 90.0}] and any("utilization peaked at 90.0%" in f for f in out["flags"])
 
 
 async def test_by_mode_refuses_a_window_it_would_ignore(log_dir):
@@ -366,12 +366,12 @@ async def test_a_named_battery_must_be_a_number(log_dir):
 
 async def test_an_integer_topic_counts_as_a_number(log_dir):
     w = LogWriter()
-    pct = w.start("/SystemStats/CANBus/Utilization", "int64", "", BASE)
+    pct = w.start("/SystemStats/CPUUtilization", "int64", "", BASE)
     for n in range(10):
         w.append(pct, 95, at(n))
     w.save(log_dir / "int.wpilog")
     await file_tools.wpilog_open("int.wpilog")
-    assert text(await data_tools.wpilog_scan())["link"]["can_util_pct"] == 95.0
+    assert text(await data_tools.wpilog_scan())["link"]["cpu_pct"] == 95.0
 
 
 async def test_a_query_that_finds_nothing_says_no_match_and_a_good_one_says_nothing_extra(log_dir):
@@ -455,3 +455,96 @@ async def test_opening_a_changed_file_again_warns_that_earlier_answers_came_from
     again = text(await file_tools.wpilog_open("sample.wpilog"))
     assert any("read again" in warning for warning in again["warnings"])
     assert "read again" not in str(text(await file_tools.wpilog_open("sample.wpilog")).get("warnings"))
+
+
+def _enabled_log(w, start=1, end=9):
+    enabled = w.start("DS:enabled", "boolean", "", BASE)
+    w.append(enabled, False, BASE)
+    w.append(enabled, True, at(start))
+    w.append(enabled, False, at(end))
+
+
+async def test_scan_reports_loop_time_while_enabled_without_the_boot_cycle(log_dir):
+    w = LogWriter()
+    _enabled_log(w)
+    full = w.start("NT:/RealOutputs/LoggedRobot/FullCycleMS", "double", "", BASE)
+    user = w.start("NT:/RealOutputs/LoggedRobot/UserCodeMS", "double", "", BASE)
+    w.append(full, 3000.0, at(1.0))  # the slow boot cycle
+    for n in range(1, 401):
+        t = 1 + n * 0.02
+        w.append(full, 35.0 if n % 5 == 0 else 15.0, at(t))
+        w.append(user, 10.0, at(t))
+    w.append(full, 900.0, at(20))  # disabled: not counted
+    w.save(log_dir / "loop.wpilog")
+    await file_tools.wpilog_open("loop.wpilog")
+    out = text(await data_tools.wpilog_scan())
+    loop = out["loop"]
+    assert loop["topic"].endswith("LoggedRobot/FullCycleMS") and loop["scope"] == "enabled" and loop["max_ms"] == 35.0
+    assert loop["median_ms"] == 15.0 and loop["over_period_pct"] == 20.0 and loop["user_code_p95_ms"] == 10.0
+    assert any(f.startswith("med: loop time p95 was 35.0 ms") for f in out["flags"])
+
+
+async def test_a_loop_time_that_only_has_a_suggestive_name_is_listed_not_used(log_dir):
+    w = LogWriter()
+    cycle = w.start("NT:/Robot/LoopTimeMs", "double", "", BASE)
+    w.append(cycle, 30.0, BASE)
+    w.save(log_dir / "named.wpilog")
+    await file_tools.wpilog_open("named.wpilog")
+    loop = text(await data_tools.wpilog_scan())["loop"]
+    assert loop["checked"] is False and loop["candidates"] == ["/Robot/LoopTimeMs"] and "not used" in loop["hint"]
+
+
+async def test_scan_reads_can_counters_by_exact_name_and_judges_them_while_enabled(log_dir):
+    w = LogWriter()
+    _enabled_log(w)
+    tec = w.start("NT:/RealOutputs/CANBus/CANHD/TEC", "double", "", BASE)
+    off = w.start("NT:/RealOutputs/CANBus/CANHD/BusOffCount", "double", "", BASE)
+    full = w.start("NT:/RealOutputs/CANBus/CANHD/TxFullCount", "double", "", BASE)
+    scan = w.start("NT:/Vision/scanCount", "double", "", BASE)  # "can" inside a word: not a CAN counter
+    for t, tec_v, off_v in ((0.5, 200.0, 1.0), (2.0, 20.0, 1.0), (3.0, 130.0, 2.0), (6.0, 20.0, 3.0), (10.0, 10.0, 9.0)):  # 0.5 s and 10 s are disabled
+        w.append(tec, tec_v, at(t))
+        w.append(off, off_v, at(t))
+        w.append(full, 0.0 if t < 6 else 4.0, at(t))
+        w.append(scan, 99.0, at(t))
+    w.save(log_dir / "can.wpilog")
+    await file_tools.wpilog_open("can.wpilog")
+    out = text(await data_tools.wpilog_scan())
+    assert out["can_bus"] == [{"bus": "CANHD", "bus_off_rise_enabled": 2, "tec_max_enabled": 130, "tx_full_rise_enabled": 4}]
+    assert any(f.startswith("high: CAN bus CANHD went bus-off 2 time(s)") for f in out["flags"])
+    assert any("TEC reached 130 while enabled" in f for f in out["flags"]) and any(f.startswith("low: CAN bus CANHD transmit buffer") for f in out["flags"])
+
+
+async def test_a_can_counter_reset_is_not_a_negative_rise_and_a_rise_between_periods_is_not_counted(log_dir):
+    w = LogWriter()
+    enabled = w.start("DS:enabled", "boolean", "", BASE)
+    for t, on in ((0, False), (1, True), (3, False), (5, True), (7, False)):
+        w.append(enabled, on, at(t))
+    off = w.start("NT:/RealOutputs/CANBus/rio/BusOffCount", "double", "", BASE)
+    for t, value in ((1.5, 5.0), (2.5, 6.0), (4.0, 50.0), (5.5, 2.0), (6.5, 3.0)):  # +1, +44 while disabled, a reset to 2, then +1
+        w.append(off, value, at(t))
+    w.save(log_dir / "reset.wpilog")
+    await file_tools.wpilog_open("reset.wpilog")
+    assert text(await data_tools.wpilog_scan())["can_bus"] == [{"bus": "rio", "bus_off_rise_enabled": 2}]
+
+
+async def test_the_scan_loop_p95_matches_the_query_percentiles_and_ignores_nan(log_dir):
+    w = LogWriter()
+    full = w.start("NT:/RealOutputs/LoggedRobot/FullCycleMS", "double", "", BASE)
+    values = [float(10 + (n * 7) % 31) for n in range(200)]
+    for n, v in enumerate(values):
+        w.append(full, v, at(n * 0.02))
+    w.append(full, float("nan"), at(5.0))
+    w.save(log_dir / "p95.wpilog")
+    await file_tools.wpilog_open("p95.wpilog")
+    scanned = text(await data_tools.wpilog_scan())["loop"]
+    queried = text(await data_tools.wpilog_query(topics=["/RealOutputs/LoggedRobot/FullCycleMS"], reduce="percentiles"))["data"]["/RealOutputs/LoggedRobot/FullCycleMS"]
+    assert scanned["p95_ms"] == queried["p95"] and scanned["n"] == 200
+
+
+async def test_a_topic_ending_in_rec_outside_a_can_path_is_not_a_can_bus(log_dir):
+    w = LogWriter()
+    for name in ("NT:/Tuning/rec", "NT:/Tuning/OffCount"):
+        w.append(w.start(name, "double", "", BASE), 500.0, BASE)
+    w.save(log_dir / "norec.wpilog")
+    await file_tools.wpilog_open("norec.wpilog")
+    assert "can_bus" not in text(await data_tools.wpilog_scan())
