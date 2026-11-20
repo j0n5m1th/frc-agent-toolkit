@@ -93,13 +93,13 @@ async def test_live_correlation_finds_the_lag(client, nt_server):
     async def drive():
         for n in range(150):
             t = n * 0.02
-            a.set(ntcore.Value.makeDouble(math.sin(t * 4.0)))
-            b.set(ntcore.Value.makeDouble(math.sin((t - 0.3) * 4.0)))
+            a.set(ntcore.Value.makeDouble(math.sin(t * 2.0)))
+            b.set(ntcore.Value.makeDouble(math.sin((t - 0.3) * 2.0)))
             nt_server.flush()
             await asyncio.sleep(0.02)
 
     task = asyncio.create_task(drive())
-    out = j(await client.call_tool("nt4_correlate", {"a": "/Motor/Current", "b": "/Battery/Sag", "duration_s": 3.0, "max_lag_s": 0.6}))
+    out = j(await client.call_tool("nt4_correlate", {"a": "/Motor/Current", "b": "/Battery/Sag", "duration_s": 3.0, "max_lag_s": 0.8}))
     await task
     assert out["best_lag"]["meaning"] == "b follows a" and abs(out["best_lag"]["lag_s"] - 0.3) <= 0.2  # live times are when updates arrived, so a few tens of ms of jitter
 
