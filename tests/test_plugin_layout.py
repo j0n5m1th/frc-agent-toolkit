@@ -116,7 +116,7 @@ def test_the_repo_does_not_load_the_plugin_servers_as_project_servers():
     assert not settings.exists() or "mcpServers" not in settings.read_text(encoding="utf-8")
 
 
-SKILL_NAMES = {"frc-explain", "frc-reasoning", "wpilib-prematch", "wpilib-triage", "wpilib-tune", "frc-start-here", "systemcore", "systemcore-live", "systemcore-restart", "systemcore-provision", "ctre-diagnose", "ctre-convert", "ctre-canivore",
+SKILL_NAMES = {"frc-explain", "frc-reasoning", "wpilib-swerve", "wpilib-prematch", "wpilib-triage", "wpilib-tune", "frc-start-here", "systemcore", "systemcore-live", "systemcore-restart", "systemcore-provision", "ctre-diagnose", "ctre-convert", "ctre-canivore",
                "wpilib-build", "wpilib-deploy", "wpilib-project", "wpilib-live", "wpilib-log-analysis", "wpilib-profile"}
 GATED = {"systemcore-restart", "systemcore-provision", "ctre-canivore", "wpilib-deploy"}  # side effects: the model may not start these alone
 
@@ -126,8 +126,8 @@ def frontmatter(skill: Path) -> dict[str, str]:
     return dict(line.split(": ", 1) for line in block.splitlines())
 
 
-def test_the_plugin_has_exactly_these_nineteen_skills():
-    assert {skill.name for skill in SKILLS} == SKILL_NAMES and len(SKILLS) == 19
+def test_the_plugin_has_exactly_these_twenty_skills():
+    assert {skill.name for skill in SKILLS} == SKILL_NAMES and len(SKILLS) == 20
 
 
 def test_exactly_the_four_side_effect_skills_are_hidden_from_the_model():

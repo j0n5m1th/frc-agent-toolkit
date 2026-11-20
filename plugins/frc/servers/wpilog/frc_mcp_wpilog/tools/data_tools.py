@@ -36,6 +36,7 @@ from ..app import (
 )
 from ..scan_queries import scan
 from ..store import logs
+from ..swerve_checks import swerve
 
 Names = Annotated[list[str], Field(min_length=1, max_length=50, description="Topic names; a trailing * means every topic under that prefix, e.g. ['/Robot/Shooter/*']")]
 
@@ -144,6 +145,21 @@ async def wpilog_text(
     if not out["searched"]:  # no text topic to look in: that is not "no errors"
         reason = "none of the named topics are in this log" if out.get("not_in_log") else "this log has no text topic to search"
         out = with_status(out, (), reason=reason)
+    return reply(out)
+
+
+@mcp.tool(annotations={**READ_ONLY_LOCAL, "title": "Check the swerve modules"}, output_schema=None)
+@tool_errors
+async def wpilog_swerve(
+    measured: Annotated[str | None, Field(description="Measured SwerveModuleState[] topic, if its name is not a usual one")] = None,
+    setpoint: Annotated[str | None, Field(description="Commanded SwerveModuleState[] topic")] = None,
+    align: Align = "start",
+    since_ms: SinceMs = None,
+    until_ms: UntilMs = None,
+    log: LogId = None,
+) -> ToolResult:
+    """Swerve: how closely each module followed its command (speed and angle error, top speed) and which module lags the others. Default window: while enabled. Says which topics it used."""
+    out = await asyncio.to_thread(swerve, logs.get(log), measured, setpoint, queries.Range(align, since_ms, until_ms))
     return reply(out)
 
 

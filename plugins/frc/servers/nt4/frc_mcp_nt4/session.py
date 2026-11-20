@@ -33,6 +33,7 @@ from .capture import (
     new_log_path,
     wait_ended,
 )
+from .capture.buffer import Sample
 from .endpoint import check_connection
 from .errors import NT4Error
 from .gate import OperationGate
@@ -379,6 +380,10 @@ class NT4Session:
         cap = self.get_capture(cid)
         await wait_ended(cap, timeout_s)
         return cap
+
+    async def record_samples(self, spec: CaptureSpec) -> dict[str, list[Sample]]:
+        """One-shot capture: record `spec.duration_s`, stop, free the capture, return each topic's raw samples."""
+        return await self.capture_registry.record(self.inst, spec, max_captures=MAX_CAPTURES)
 
     async def watch_once(self, spec: CaptureSpec, query: QuerySpec) -> dict[str, Any]:
         """One-shot capture: record `spec.duration_s`, stop, return the result of `query`, free the capture (no `id` or `active` keys).

@@ -8,7 +8,7 @@ Start with [Getting started](GETTING_STARTED.md). Each guide is short on purpose
 |---|---|
 | [Getting started](GETTING_STARTED.md) | Install, add the plugin, try the demos, connect a robot |
 | [Log server](WPILOG.md) · [more](WPILOG_ADVANCED.md) | Questions about a recorded match; several logs, Driver Station logs, limits |
-| [Live server](NT4.md) | What the robot is doing now (NetworkTables) |
+| [Live server](NT4.md) · [more](NT4_ADVANCED.md) | What the robot is doing now (NetworkTables); captures, writing, troubleshooting |
 | [Simulation](SIM.md) · [VS Code commands](VSCODE.md) · [Profiling](JFR.md) | Run, build and measure your robot code |
 | [Systemcore](SYSTEMCORE.md) | The robot controller: logs, restart, provisioning |
 | [CTRE](CTRE.md) · [devices](CTRE_DEVICES.md) | Phoenix tools, hoot files, CANivore, the diagnostic server |

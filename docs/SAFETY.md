@@ -26,7 +26,7 @@ The plugin's `PreToolUse` hook makes Claude Code ask a person before each call o
 
 - **Writes cannot be turned on from the plugin dialog.** Turning off "NetworkTables read-only" is not enough. Add your own server entry (see above) with `NT4_ALLOW_WRITES=1` and `NT4_WRITE_PREFIXES`, and switch off the plugin's `nt4`.
 - Writing needs both `NT4_ALLOW_WRITES=1` and `NT4_WRITE_PREFIXES` (topic paths, such as `/Tunables`). `NT4_READ_ONLY=1` always wins. `/` alone is not a write prefix. A value that is not a yes or no word fails closed. Port 6810 is never written.
-- Publishers are held until released or disconnected, and can outlive their use (retained or persistent topics). `publisher_ttl_s` is a best-effort timer, not a safety interlock. An approval prompt is not a replacement for these controls. More in [NT4](NT4.md#writing-off-by-default).
+- Publishers are held until released or disconnected, and can outlive their use (retained or persistent topics). `publisher_ttl_s` is a best-effort timer, not a safety interlock. An approval prompt is not a replacement for these controls. More in [NT4](NT4_ADVANCED.md#writing-off-by-default).
 
 ### Systemcore
 

@@ -14,6 +14,7 @@ from typing import Any
 import ntcore
 
 from ..errors import NT4Error
+from .buffer import Sample
 from .query import QuerySpec
 from .recorder import Capture, CaptureSpec
 
@@ -99,6 +100,17 @@ class CaptureRegistry:
         res.pop("id", None)
         res.pop("active", None)
         return res
+
+    async def record(self, inst: ntcore.NetworkTableInstance, spec: CaptureSpec, *, max_captures: int) -> dict[str, list[Sample]]:
+        """One-shot capture like `watch`, but return the raw samples of each topic (`(ms, value, reliable)`, oldest first) instead of a reduction."""
+        cap = self.start(inst, replace(spec, duration_s=spec.duration_s + 1), max_captures=max_captures, new_log_path=None)
+        try:
+            await wait_ended(cap, spec.duration_s)
+            cap.stop()
+            return cap.snapshot(spec.topics).buffer.samples
+        finally:
+            if cap.id in self._captures:
+                self.stop(cap.id, discard=True)
 
     def is_busy(self) -> bool:
         """True while a capture is recording or retaining event data, i.e. still needs the connection."""

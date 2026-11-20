@@ -17,6 +17,7 @@ from .loglike import LogLike
 from .loop_can_checks import can_check, counter_topics, loop_check, loop_topics
 from .rows import LogRow, Rows, finite_numbers
 from .signal_roles import Choice, battery_choice, brownout_choice
+from .swerve_checks import analysis_windows, log_pair, scan_block
 from .text_queries import text_topics
 from .timeline import origin_us, phases
 
@@ -196,8 +197,10 @@ def scan(log: LogLike, battery_topic: str | None = None) -> dict[str, Any]:
     full_loop, user_loop, loop_names = loop_topics(shown)
     buses = counter_topics(shown)
     loop_used = [t for t in (full_loop, user_loop) if t is not None]
+    swerve = log_pair(log)
+    swerve_used = [swerve.measured, swerve.setpoint] if swerve.measured and swerve.setpoint else []
     wanted = [*text_names, *(t.name for t in battery.topics), *(t.name for t in browned.topics), *(t.name for found in links.values() for t in found),
-              *(t.name for t in loop_used), *(t.name for fields in buses.values() for t in fields.values())]
+              *(t.name for t in loop_used), *(t.name for fields in buses.values() for t in fields.values()), *swerve_used]
     rows = log.rows(list(dict.fromkeys(wanted)))  # one pass over the file for every topic the checks read
     found = phases(log)
     align = "auto" if any(p.mode == "auto" for p in found) else "enable" if found else "start"
@@ -219,6 +222,9 @@ def scan(log: LogLike, battery_topic: str | None = None) -> dict[str, Any]:
     flags += more
     out["loop"], more = loop_check(rows, full_loop, user_loop, loop_names, found)
     flags += more
+    if swerve_used:
+        out["swerve"], more = scan_block(rows, swerve, analysis_windows(found, log.start_us, log.end_us, None, None), origin)
+        flags += more
     can_rows, more = can_check(rows, buses, found)
     if can_rows:
         out["can_bus"] = can_rows

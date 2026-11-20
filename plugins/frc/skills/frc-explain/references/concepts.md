@@ -25,3 +25,5 @@ General background to teach from, not facts about this team's robot. Check a num
 **Profiling.** Measuring where a program spends its time and memory instead of guessing. A sample-based profile shows where time goes, not why. Make one change, measure again. Worth exploring: measuring before and after a change.
 
 **Correlation and cause.** Two signals moving together may share a cause or be coincidence. To name a cause, find a second signal, or change one thing and watch. Worth exploring: designing a test that could prove an idea wrong.
+
+**Swerve module state.** A swerve module has a speed (m/s) and an angle. The code commands each module (the setpoint) and the module reports what it did (measured). The gap per module shows which one is not keeping up. A module is told to take the shorter turn, flipping its wheel 180 degrees and reversing the speed, so compare against the optimized setpoint. Worth exploring: how a loose belt or a current limit looks in the gap, and why a wrong encoder offset does not.

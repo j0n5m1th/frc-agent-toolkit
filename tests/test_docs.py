@@ -95,7 +95,7 @@ def tool_names(key: str) -> set[str]:
 
 
 def test_the_nt4_and_wpilog_guides_name_every_tool_of_their_server():
-    for key, guide in (("nt4", ("NT4.md",)), ("wpilog", ("WPILOG.md", "WPILOG_ADVANCED.md"))):
+    for key, guide in (("nt4", ("NT4.md", "NT4_ADVANCED.md")), ("wpilog", ("WPILOG.md", "WPILOG_ADVANCED.md"))):
         tools = tool_names(key)
         assert len(tools) > 8, key  # the search found the server
         missing = sorted(name for name in tools if f"`{name}`" not in doc_text(*guide))
@@ -103,7 +103,7 @@ def test_the_nt4_and_wpilog_guides_name_every_tool_of_their_server():
 
 
 def test_the_server_guides_keep_to_their_length():
-    for guide, low, high in (("NT4.md", 1100, 2000), ("WPILOG.md", 1100, 1900), ("WPILOG_ADVANCED.md", 800, 1500)):
+    for guide, low, high in (("NT4.md", 1000, 1900), ("NT4_ADVANCED.md", 450, 900), ("WPILOG.md", 1100, 1900), ("WPILOG_ADVANCED.md", 800, 1500)):
         words = len((ROOT / "docs" / guide).read_text(encoding="utf-8").split())
         assert low <= words <= high, f"docs/{guide} has {words} words (allowed {low} to {high})"
 
