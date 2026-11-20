@@ -8,8 +8,9 @@ from typing import Any
 
 from frc_mcp_wpilib import scan as core
 from frc_mcp_wpilib.scan import ScanContext
-from frc_mcp_wpilib.scan_roles import ScanError, ScanTopic
+from frc_mcp_wpilib.scan_roles import ScanError
 
+from .checks import scan_topics
 from .errors import WPILogError
 from .logfile import serialized
 from .loglike import LogLike
@@ -23,8 +24,7 @@ def scan(log: LogLike, battery_topic: str | None = None) -> dict[str, Any]:
     """The usual trouble in a log: `flags` ranked high to low, then the numbers behind them. Times are seconds after the first
     autonomous (else the first enable, else the log start; `t0` says which). `battery_topic` names the battery voltage topic;
     without it only a topic with a conventional name is used (see `frc_mcp_wpilib.scan_roles`)."""
-    everything = {t.name: ScanTopic(t.name, t.type_str, t.count, t.unit, t.last_us) for t in log.topics.values()}
-    visible = [everything[t.name] for t in log.topics.values() if not t.hidden]
+    visible, everything = scan_topics(log)
     if battery_topic in log.topics and (why := log.topics[battery_topic].unusable_for("`wpilog_scan`")) is not None:
         raise WPILogError(why)
     try:

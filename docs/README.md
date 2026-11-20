@@ -9,6 +9,7 @@ Start with [Getting started](GETTING_STARTED.md). Each guide is short on purpose
 | [Getting started](GETTING_STARTED.md) | Install, add the plugin, try the demos, connect a robot |
 | [Log server](WPILOG.md) · [more](WPILOG_ADVANCED.md) | Questions about a recorded match; several logs, Driver Station logs, limits |
 | [Live server](NT4.md) · [more](NT4_ADVANCED.md) | What the robot is doing now (NetworkTables); captures, writing, troubleshooting |
+| [Robot info](ROBOT_INFO.md) | Publish names for your hardware so the checks can use them |
 | [Checks](CHECKS.md) | The same checks on a log and on the live robot: usual trouble, swerve, power, mechanisms, correlation, pose |
 | [Simulation](SIM.md) · [VS Code commands](VSCODE.md) · [Profiling](JFR.md) | Run, build and measure your robot code |
 | [Systemcore](SYSTEMCORE.md) | The robot controller: logs, restart, provisioning |

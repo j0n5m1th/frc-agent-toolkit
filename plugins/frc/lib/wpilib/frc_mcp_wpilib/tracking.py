@@ -9,12 +9,12 @@ from collections.abc import Iterator, Sequence
 from typing import Any
 
 from .errors import WPILibMCPError
+from .scan_rows import Row, Window, everywhere
 
 MAX_SAMPLES = 3000  # measured updates read (evenly spread)
 MIN_COMPARED = 10  # fewer paired updates than this say nothing about how well a signal followed its command
 
-Samples = Sequence[tuple[int, Any]]  # (time in microseconds, value), oldest first
-Window = tuple[int, int]  # (start, end) in microseconds, inclusive
+Samples = Sequence[Row]  # (time in microseconds, value), oldest first
 
 
 class NothingToCompare(WPILibMCPError):
@@ -23,7 +23,7 @@ class NothingToCompare(WPILibMCPError):
 
 def sampled(times: Sequence[int], windows: Sequence[Window]) -> list[int]:
     """Row numbers inside the windows, thinned to at most `MAX_SAMPLES` evenly spread. Rows are in time order, so each window is a slice."""
-    spans = [range(bisect_left(times, lo), bisect_right(times, hi)) for lo, hi in windows]
+    spans = [range(bisect_left(times, lo), bisect_right(times, hi)) for lo, hi in everywhere(windows)]
     step = max(1, sum(len(r) for r in spans) // MAX_SAMPLES)
     return [i for r in spans for i in r[::step]]
 

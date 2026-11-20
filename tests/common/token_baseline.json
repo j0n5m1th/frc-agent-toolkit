@@ -2,15 +2,15 @@
  "nt4": {
   "full": {
    "gates-off": {
-    "tools": 14,
-    "names": 151,
-    "defs": 3520,
+    "tools": 18,
+    "names": 193,
+    "defs": 4169,
     "instructions": 48
    },
    "gates-on": {
-    "tools": 16,
-    "names": 175,
-    "defs": 3940,
+    "tools": 20,
+    "names": 217,
+    "defs": 4589,
     "instructions": 48
    }
   },
@@ -32,15 +32,15 @@
  "wpilog": {
   "full": {
    "gates-off": {
-    "tools": 12,
-    "names": 136,
-    "defs": 2839,
+    "tools": 16,
+    "names": 182,
+    "defs": 3868,
     "instructions": 62
    },
    "gates-on": {
-    "tools": 12,
-    "names": 136,
-    "defs": 2839,
+    "tools": 16,
+    "names": 182,
+    "defs": 3868,
     "instructions": 62
    }
   },

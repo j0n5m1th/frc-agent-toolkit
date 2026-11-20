@@ -6,7 +6,8 @@ import pytest
 from fastmcp.exceptions import ToolError
 
 TOOLS = {"wpilog_list", "wpilog_open", "wpilog_close", "wpilog_topics", "wpilog_get_values", "wpilog_query",
-         "wpilog_when", "wpilog_text", "wpilog_scan", "wpilog_swerve", "wpilog_diff", "wpilog_sync"}
+         "wpilog_when", "wpilog_text", "wpilog_scan", "wpilog_swerve", "wpilog_diff", "wpilog_sync",
+         "wpilog_power", "wpilog_mechanism", "wpilog_correlate", "wpilog_pose"}
 
 
 async def call(client, name, args=None):

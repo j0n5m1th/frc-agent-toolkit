@@ -22,7 +22,7 @@ Writing can move a real robot, so the server only reads until you turn it on, an
 
 ## Smaller tool lists
 
-`NT4_TOOLSET=core` hides the capture tools and the two write tools (`nt4_watch` stays): 11 tools, about 2.3k tokens of definitions instead of about 3.9k for all 16. Server costs: [GETTING_STARTED](GETTING_STARTED.md#6-which-servers-to-keep-on).
+`NT4_TOOLSET=core` hides the capture tools, the two write tools and the extra checks (`nt4_power`, `nt4_mechanism`, `nt4_correlate`, `nt4_pose`); `nt4_watch` stays: 11 tools, about 2.3k tokens of definitions instead of about 4.6k for all 20. Server costs: [GETTING_STARTED](GETTING_STARTED.md#6-which-servers-to-keep-on).
 
 ## Troubleshooting
 

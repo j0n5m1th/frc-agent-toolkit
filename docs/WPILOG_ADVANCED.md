@@ -56,7 +56,7 @@ Settings are in [SETTINGS](SETTINGS.md#every-other-setting) (`WPILOG_DIR`, `WPIL
 - Only `.wpilog`, `.dslog` and `.dsevents` files inside `WPILOG_DIR` open. Other paths, extensions and outside symlinks are refused.
 - A file bigger than `WPILOG_MAX_MB` (default 2048 MB) is refused.
 - At most 4 logs are open at once. Close one with `wpilog_close` (core: reconnect to close all).
-- `WPILOG_TOOLSET=core` hides `wpilog_diff`, `wpilog_sync` and `wpilog_close` (about 2.2k tokens of definitions instead of 2.7k).
+- `WPILOG_TOOLSET=core` hides `wpilog_diff`, `wpilog_sync`, `wpilog_close` and the extra checks (`wpilog_power`, `wpilog_mechanism`, `wpilog_correlate`, `wpilog_pose`): about 2.4k tokens of definitions instead of 3.9k.
 - A log cut short (power lost while logging) opens with a warning. Everything before the cut is readable.
 
 **Time.** Opening reads the whole file once. Measured on a laptop: about 25 seconds for a 230 MB log with 15 million updates, and about 9 seconds for a real 225 MB log with 5.3 million. Topics with 2,000 updates or fewer are read in that pass; the first question about a busier topic reads the file again (about 6 seconds); later ones are instant.

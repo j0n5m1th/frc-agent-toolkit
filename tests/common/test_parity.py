@@ -21,6 +21,10 @@ PAIRS = {
     "when a condition holds": (("wpilog_when",), ("nt4_wait_for",)),
     "the usual trouble": (("wpilog_scan",), ("nt4_scan",)),
     "swerve modules": (("wpilog_swerve",), ("nt4_swerve",)),
+    "which device drew the current": (("wpilog_power",), ("nt4_power",)),
+    "one mechanism's tracking": (("wpilog_mechanism",), ("nt4_mechanism",)),
+    "do two signals move together": (("wpilog_correlate",), ("nt4_correlate",)),
+    "the robot pose": (("wpilog_pose",), ("nt4_pose",)),
 }
 LOG_ONLY = {
     "wpilog_list": "finds log files, which a live robot does not have",
