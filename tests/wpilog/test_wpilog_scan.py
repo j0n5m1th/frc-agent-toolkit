@@ -302,3 +302,73 @@ async def test_changes_are_sampled_at_their_exact_time_not_the_rounded_one(log_d
     await file_tools.wpilog_open("fine.wpilog")
     out = text(await data_tools.wpilog_when("/Fake/Mode", "changed", sample=["/Fake/Other"]))
     assert out["changes_ms"] == [1.0] and out["sampled"] == {"/Fake/Other": [11]}
+
+
+def _log_with(log_dir, name, topics):
+    """A log file `name` holding each `(topic, value)` as a double sampled once a second."""
+    w = LogWriter()
+    for topic, value in topics:
+        entry = w.start(topic, "double", '{"unit":"V"}', BASE)
+        for n in range(10):
+            w.append(entry, value, at(n))
+    w.save(log_dir / name)
+    return name
+
+
+async def test_a_topic_with_only_a_suggestive_name_is_listed_not_used(log_dir):
+    await file_tools.wpilog_open(_log_with(log_dir, "rail.wpilog", [("/SystemStats/UserVoltage5V", 5.0), ("/Drive/BatteryTemp", 30.0)]))
+    out = text(await data_tools.wpilog_scan())["battery"]
+    assert out["checked"] is False and "min_v" not in out
+    assert out["candidates"] == ["/Drive/BatteryTemp", "/SystemStats/UserVoltage5V"] and "pass battery=" in out["hint"]
+
+
+async def test_a_conventional_name_is_used_and_says_so_and_lists_the_others(log_dir):
+    topics = [("/SystemStats/BatteryVoltage", 12.0), ("/Robot/PDH/Voltage", 11.0), ("/SystemStats/UserVoltage5V", 5.0)]
+    await file_tools.wpilog_open(_log_with(log_dir, "conv.wpilog", topics))
+    out = text(await data_tools.wpilog_scan())["battery"]
+    assert out["topic"] == "/SystemStats/BatteryVoltage" and out["chosen_by"] == "convention" and out["min_v"] == 12.0
+    assert out["others"] == ["/Robot/PDH/Voltage"]  # the 5 V rail is not even a candidate once a convention matched
+
+
+async def test_a_voltage_leaf_under_a_power_distribution_path_is_a_convention(log_dir):
+    await file_tools.wpilog_open(_log_with(log_dir, "pdh.wpilog", [("/Robot/PowerDistribution[1]/Voltage", 9.0)]))
+    out = text(await data_tools.wpilog_scan())["battery"]
+    assert out["chosen_by"] == "convention" and out["min_v"] == 9.0
+
+
+async def test_the_caller_can_name_the_battery_and_a_wrong_name_is_an_error_not_a_fallback(log_dir):
+    await file_tools.wpilog_open(_log_with(log_dir, "named.wpilog", [("/Robot/Rail", 8.0), ("/SystemStats/BatteryVoltage", 12.0)]))
+    out = text(await data_tools.wpilog_scan(battery="/Robot/Rail"))["battery"]
+    assert out["topic"] == "/Robot/Rail" and out["chosen_by"] == "explicit" and out["min_v"] == 8.0
+    with pytest.raises(Exception, match="not in this log"):
+        await data_tools.wpilog_scan(battery="/No/Such")
+
+
+async def test_a_boolean_that_only_looks_like_a_brownout_is_a_candidate(log_dir):
+    w = LogWriter()
+    flag = w.start("/Robot/BrownoutWarning", "boolean", "", BASE)
+    w.append(flag, False, BASE)
+    w.save(log_dir / "warn.wpilog")
+    await file_tools.wpilog_open("warn.wpilog")
+    out = text(await data_tools.wpilog_scan())
+    assert out["brownout_candidates"] == ["/Robot/BrownoutWarning"] and "brownout_s" not in out
+
+
+async def test_a_named_battery_must_be_a_number(log_dir):
+    w = LogWriter()
+    flag = w.start("/Robot/Flag", "boolean", "", BASE)
+    w.append(flag, True, BASE)
+    w.save(log_dir / "flag.wpilog")
+    await file_tools.wpilog_open("flag.wpilog")
+    with pytest.raises(Exception, match="must be a number"):
+        await data_tools.wpilog_scan(battery="/Robot/Flag")
+
+
+async def test_an_integer_topic_counts_as_a_number(log_dir):
+    w = LogWriter()
+    pct = w.start("/SystemStats/CANBus/Utilization", "int64", "", BASE)
+    for n in range(10):
+        w.append(pct, 95, at(n))
+    w.save(log_dir / "int.wpilog")
+    await file_tools.wpilog_open("int.wpilog")
+    assert text(await data_tools.wpilog_scan())["link"]["can_util_pct"] == 95.0

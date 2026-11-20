@@ -89,7 +89,7 @@ A log holds only **what the robot recorded**. Timing is the update's own timesta
 
 **Compare two runs.** Open both, then: "Compare the elevator current in the two logs, using times since autonomous started in each." For settings, ask "What did we change between these two matches?" (`wpilog_diff`). It lists tunables and constants that differ, that only one log has, or that changed during one. Busy signals (over 2,000 updates) are skipped. `prefix="/Tunables/"` narrows it.
 
-**Scan for trouble.** "Scan this log." `wpilog_scan` runs the same checks every time and returns ranked `flags`: errors, loop overruns, battery below 10 V or 7 V, brownouts, packet loss, CAN use, signals that stopped. It finds the battery and link topics by name, so a team with other names gets `checked: false` for that part.
+**Scan for trouble.** "Scan this log." `wpilog_scan` runs the same checks every time and returns ranked `flags`: errors, loop overruns, battery below 10 V or 7 V, brownouts, packet loss, CAN use, signals that stopped. It does not guess which topic is the battery: it uses one only when you name it (`battery=`) or its name follows a usual convention (`BatteryVoltage`, or `Voltage` under a PDH, PDP or Battery path). Other topics with a suggestive name are listed as `candidates` and not used, because a 5 V rail is not the battery. The reply says which topic each number came from (`chosen_by`, `link.from`).
 
 **Auto against teleop.** `by_mode=true` on `wpilog_query` answers once per enabled period. `sample` on `wpilog_when` reads other topics at each stretch start ("arm angle each time the current went over 40 A"). `name_contains` takes `a|b`.
 

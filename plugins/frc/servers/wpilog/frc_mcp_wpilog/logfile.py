@@ -98,6 +98,11 @@ class Topic:
     last_us: int | None = None
     mixed_types: tuple[str, ...] = ()  # every log type the name was started with, when they are not one number kind
 
+    @property
+    def is_numeric(self) -> bool:
+        """A single number per update (`type_str` is the NetworkTables spelling, so a WPILOG int64 is `int`)."""
+        return self.type_str in ("double", "float", "int")
+
     def unusable_for(self, what: str) -> str | None:
         """Why `what` cannot be computed from this topic's rows, or None: a name restarted with another type holds values of
         several types under one type string, which no reduction can read."""

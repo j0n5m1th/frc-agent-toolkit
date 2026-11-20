@@ -16,6 +16,7 @@ from frc_mcp_wpilib.reduce.stats import US_PER_S
 from .logfile import Topic, serialized
 from .loglike import LogLike
 from .rows import LogRow, Rows
+from .signal_roles import Choice, battery_choice, brownout_choice
 from .text_queries import text_topics
 from .timeline import origin_us, phases
 
@@ -34,17 +35,13 @@ Visible = list[tuple[Topic, str]]  # (topic, lower-case name) of the topics a ch
 TopicRows = dict[str, Rows]  # topic name -> its rows, read in one pass
 
 
-def _is_number(topic: Topic) -> bool:
-    return topic.type_str in ("double", "float", "int")
-
-
 def _is_bool(topic: Topic) -> bool:
     return topic.type_str == "boolean"
 
 
-def _pick(visible: Visible, *words: str, kind: Callable[[Topic], bool] = _is_number) -> list[Topic]:
-    """Topics of `kind` whose lower-case name holds every word, most updates first."""
-    found = [t for t, low in visible if kind(t) and all(w in low for w in words)]
+def _pick(visible: Visible, *words: str) -> list[Topic]:
+    """Number topics whose lower-case name holds every word, most updates first."""
+    found = [t for t, low in visible if t.is_numeric and all(w in low for w in words)]
     return sorted(found, key=lambda t: (-t.count, t.name))
 
 
@@ -106,25 +103,33 @@ def _messages(rows: TopicRows, names: list[str], origin: int) -> tuple[dict[str,
     return out, flags
 
 
-def _battery(end_us: int, rows: TopicRows, battery: Topic | None, browned: list[Topic], origin: int) -> tuple[dict[str, Any], list[str]]:
+def _battery(end_us: int, rows: TopicRows, battery_pick: Choice, browned_pick: Choice, origin: int) -> tuple[dict[str, Any], list[str]]:
     flags: list[str] = []
     out: dict[str, Any] = {}
+    battery: Topic | None = battery_pick.topics[0] if battery_pick.topics else None
+    browned = browned_pick.topics
     if battery:
         every = _numbers(rows, battery)
         readings = [(t, v) for t, v in every if float(v) > 0]  # 0 V is no battery (bench or simulation), not a brownout
-        if readings:
+        if not every:
+            out["battery"] = {"checked": False, "topic": battery.name, "why": "the battery topic has no numeric readings"}
+        elif readings:
             at_us, low = min(readings, key=lambda r: r[1])
             at = round((at_us - origin) / US_PER_S, 1)
             under, brown = _held_s(every, end_us, lambda v: 0 < v < LOW_VOLTS, lambda v: 0 < v < BROWNOUT_VOLTS)  # a 0 V stretch is not sag
-            out["battery"] = {"topic": battery.name, "min_v": round(low, 2), "min_at_s": at, "below_10v_s": round(under, 1), "below_7v_s": round(brown, 1)}
+            out["battery"] = {"topic": battery.name, "chosen_by": battery_pick.by, "min_v": round(low, 2), "min_at_s": at, "below_10v_s": round(under, 1), "below_7v_s": round(brown, 1)}
+            if battery_pick.others:
+                out["battery"]["others"] = battery_pick.others  # other topics that could be the battery: confirm which one is
             if low < BROWNOUT_VOLTS:
                 flags.append(f"high: battery fell to {low:.1f} V at {at} s (the roboRIO can brown out below 7 V)")
             elif low < LOW_VOLTS:
                 flags.append(f"med: battery fell to {low:.1f} V at {at} s; {under:.1f} s below 10 V")
         else:
-            out["battery"] = {"checked": False, "why": "battery reads 0 V (no battery connected?)"}
+            out["battery"] = {"checked": False, "topic": battery.name, "why": "battery reads 0 V (no battery connected?)"}
     else:
-        out["battery"] = {"checked": False, "why": "no battery voltage topic"}
+        out["battery"] = {"checked": False, "why": "no topic follows a battery name (a leaf BatteryVoltage, or Voltage under PowerDistribution, PDH, PDP or Battery)"}
+        if battery_pick.others:
+            out["battery"] |= {"candidates": battery_pick.others, "hint": "not used, a name is not proof; pass battery=<topic> to scan with one"}
     seen = {}
     for topic in browned:
         flag_rows = [r for r in rows[topic.name] if isinstance(r[1], bool)]
@@ -135,11 +140,14 @@ def _battery(end_us: int, rows: TopicRows, battery: Topic | None, browned: list[
         flags.append(f"high: brownout flag true for {max(seen.values())} s ({next(iter(seen))})")
     elif browned:
         out["brownout_s"] = 0
+    elif browned_pick.others:
+        out["brownout_candidates"] = browned_pick.others  # named like a brownout flag but not a known one, so not used
     return out, flags
 
 
 def _link(rows: TopicRows, links: dict[str, list[Topic]]) -> tuple[dict[str, Any], list[str]]:
     out: dict[str, Any] = {}
+    used: dict[str, str] = {}
     flags: list[str] = []
     for label, _, limit in LINK:
         if not links[label]:
@@ -150,18 +158,21 @@ def _link(rows: TopicRows, links: dict[str, list[Topic]]) -> tuple[dict[str, Any
             if label in FRACTION_LABELS and topic.unit != "%" and peak <= 1.0 and "systemstats" in topic.name.lower():
                 peak *= 100  # only SystemStats names are read as fractions: a unit-less percent below 1 stays as logged
             out[label] = round(peak, 1)
+            used[label] = topic.name
             if peak > limit:
                 flags.append(f"med: {label} peaked at {round(peak, 1)} ({topic.name})")
     if not out:
         out["checked"] = False
         out["why"] = "no Driver Station or SystemStats link topics"
+    else:
+        out["from"] = used  # these are found by name, so say which topic each number came from
     return out, flags
 
 
 def _silent(log: LogLike, visible: Visible, origin: int) -> tuple[list[list[Any]], list[str]]:
     """Busy topics whose last update came well before the log ended."""
     limit_us = max(MIN_SILENT_S, log.duration_s * 0.1) * US_PER_S
-    stopped = sorted((t for t, _ in visible if (_is_number(t) or _is_bool(t)) and t.count >= MIN_SILENT_UPDATES and t.last_us is not None
+    stopped = sorted((t for t, _ in visible if (t.is_numeric or _is_bool(t)) and t.count >= MIN_SILENT_UPDATES and t.last_us is not None
                       and log.end_us - t.last_us > limit_us), key=lambda t: -t.count)
     rows = [[t.name, round((t.last_us - origin) / US_PER_S, 1)] for t in stopped[:MAX_EXAMPLES]]  # type: ignore[operator]
     if not rows:
@@ -172,15 +183,17 @@ def _silent(log: LogLike, visible: Visible, origin: int) -> tuple[list[list[Any]
 
 
 @serialized
-def scan(log: LogLike) -> dict[str, Any]:
+def scan(log: LogLike, battery_topic: str | None = None) -> dict[str, Any]:
     """The usual trouble in a log: `flags` ranked high to low, then the numbers behind them. Times are seconds after the first
-    autonomous (else the first enable, else the log start; `t0` says which)."""
+    autonomous (else the first enable, else the log start; `t0` says which). `battery_topic` names the battery voltage topic;
+    without it only a topic with a conventional name is used (see signal_roles.py)."""
     visible: Visible = [(t, t.name.lower()) for t in log.topics.values() if not t.hidden]
     text_names = [n for n in text_topics(log) if n in log.topics]
-    battery = next((t for t in _pick(visible, "battery") if "volt" in t.name.lower() or t.unit == "V"), None)
-    browned = _pick(visible, "brown", kind=_is_bool)
+    shown = [t for t, _ in visible]
+    battery = battery_choice(shown, battery_topic, log.topics)
+    browned = brownout_choice(shown)
     links = {label: _pick(visible, *words)[:1] for label, words, _ in LINK}
-    wanted = [*text_names, *([battery.name] if battery else []), *(t.name for t in browned), *(t.name for found in links.values() for t in found)]
+    wanted = [*text_names, *(t.name for t in battery.topics), *(t.name for t in browned.topics), *(t.name for found in links.values() for t in found)]
     rows = log.rows(list(dict.fromkeys(wanted)))  # one pass over the file for every topic the checks read
     found = phases(log)
     align = "auto" if any(p.mode == "auto" for p in found) else "enable" if found else "start"

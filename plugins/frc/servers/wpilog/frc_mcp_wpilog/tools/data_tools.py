@@ -146,7 +146,7 @@ async def wpilog_text(
 
 @mcp.tool(annotations={**READ_ONLY_LOCAL, "title": "Scan a log for trouble"}, output_schema=None)
 @tool_errors
-async def wpilog_scan(log: LogId = None) -> ToolResult:
-    """Usual trouble in one call: errors, loop overruns, battery sag, brownouts, link and CAN numbers, stopped signals. `flags` rank high to low; times are s after first auto."""
+async def wpilog_scan(log: LogId = None, battery: Annotated[str | None, Field(description="Battery voltage topic, if its name is not a usual one")] = None) -> ToolResult:
+    """Usual trouble in one call: errors, loop overruns, battery sag, brownouts, link and CAN numbers, stopped signals. `flags` rank high to low; says which topics it used; times are s after first auto."""
     opened = logs.get(log)
-    return reply(await asyncio.to_thread(scan, opened))
+    return reply(await asyncio.to_thread(scan, opened, battery))
