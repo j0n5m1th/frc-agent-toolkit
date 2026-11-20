@@ -136,6 +136,8 @@ Time zero is when the Driver Station started the log. Try: "When did the battery
 
 ## Limits
 
+`wpilog_open` shows which robot code made the log (`code`) when the log records text such as `/RealMetadata/GitSHA`, `GitBranch`, `BuildDate` or `Version` (AdvantageKit logs these). Check out that version when you need to know what a topic means. `wpilog_diff` says when two logs come from different code, so a changed value may be a code change, not tuning.
+
 A `summary` of a signal with at least 10 updates says how it is logged (`sampling`): `periodic` (every loop), `change_only` (only when the value changes, so a long gap is a hold, not missing data, and a mean counts updates, not seconds; use `reduce=time_weighted` for a mean over time) or `event`. It is judged from the first 5000 updates, and left out when the data has gaps or is out of order.
 
 A reply that is not a full answer carries a `status`: `no_match` (nothing was found, for example every topic name was wrong, or the log has no text topic) or `partial` (some topics failed). Finding nothing is not proof that nothing is wrong. A good reply has no `status`.

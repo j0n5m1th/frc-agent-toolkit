@@ -26,7 +26,7 @@ class Choice:
     others: list[str] = field(default_factory=list)
 
 
-def _leaf_and_parents(name: str) -> tuple[str, list[str]]:
+def leaf_and_parents(name: str) -> tuple[str, list[str]]:
     *parents, leaf = name.lower().replace(":", "/").split("/")
     return leaf, [p.split("[")[0] for p in parents]
 
@@ -56,10 +56,10 @@ def battery_choice(visible: list[Topic], explicit: str | None, topics: dict[str,
         return Choice([topics[explicit]], "explicit", _candidates(numbers, {explicit}, "battery"))
     matched = []
     for t in numbers:
-        leaf, parents = _leaf_and_parents(t.name)
+        leaf, parents = leaf_and_parents(t.name)
         if leaf in BATTERY_LEAVES or (leaf == "voltage" and any(p in BATTERY_PARENTS for p in parents)):
             matched.append(t)
-    matched.sort(key=lambda t: (_leaf_and_parents(t.name)[0] not in BATTERY_LEAVES, -t.count, t.name))  # a leaf named for the battery first
+    matched.sort(key=lambda t: (leaf_and_parents(t.name)[0] not in BATTERY_LEAVES, -t.count, t.name))  # a leaf named for the battery first
     if matched:
         return Choice(matched[:1], "convention", [t.name for t in matched[1:MAX_CANDIDATES + 1]])
     return Choice(others=_candidates(numbers, set(), "battery", "volt"))
@@ -68,7 +68,7 @@ def battery_choice(visible: list[Topic], explicit: str | None, topics: dict[str,
 def brownout_choice(visible: list[Topic]) -> Choice:
     """The brownout flags: boolean topics whose leaf name the libraries publish. A boolean named like a brownout in some other way is listed."""
     booleans = [t for t in visible if t.type_str == "boolean"]
-    matched = _by_updates([t for t in booleans if _leaf_and_parents(t.name)[0] in BROWNOUT_LEAVES])
+    matched = _by_updates([t for t in booleans if leaf_and_parents(t.name)[0] in BROWNOUT_LEAVES])
     if matched:
         return Choice(matched, "convention")
     return Choice(others=_candidates(booleans, set(), "brown"))

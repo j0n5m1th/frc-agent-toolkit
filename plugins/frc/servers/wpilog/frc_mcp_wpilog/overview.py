@@ -3,6 +3,7 @@
 from typing import Any
 
 from . import timeline
+from .code_version import code_version
 from .logfile import serialized
 from .loglike import LogLike
 
@@ -27,6 +28,9 @@ def overview(log: LogLike, log_id: str) -> dict[str, Any]:
     match = timeline.match_info(log)
     if match:
         out["match"] = match
+    code, code_warnings = code_version(log)
+    if code:
+        out["code"] = code  # which robot code made this log
     out["busiest"] = [[name, n] for name, n in log.busiest()]
     warnings: list[str] = []
     if not found:
@@ -37,6 +41,7 @@ def overview(log: LogLike, log_id: str) -> dict[str, Any]:
         causes = ", ".join(f"{count} {reason}" for reason, count in log.skipped_reasons.items() if count)
         warnings.append(f"{log.skipped_records} records could not be read and were skipped"
                         + (f" ({causes})" if causes else "") + ".")
+    warnings += code_warnings
     if warnings:
         out["warnings"] = warnings
     return out

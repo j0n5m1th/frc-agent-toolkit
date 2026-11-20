@@ -418,3 +418,29 @@ async def test_a_summary_says_how_the_signals_are_logged_and_says_it_once_when_t
     await file_tools.wpilog_open("sampling.wpilog")
     out = text(await data_tools.wpilog_query(topics=["/Fake/Loop1", "/Fake/Loop2"]))
     assert out["all"]["sampling"] == "periodic" and "sampling" not in out["data"]["/Fake/Loop1"]
+
+
+def _strings_log(log_dir, name, topics):
+    """A log file `name` holding each `(topic, text)` once."""
+    w = LogWriter()
+    for topic, value in topics:
+        w.append(w.start(topic, "string", "", BASE), value, BASE)
+    w.save(log_dir / name)
+    return name
+
+
+async def test_open_shows_which_robot_code_made_the_log(log_dir):
+    topics = [("/RealMetadata/GitSHA", "a1b2c3d"), ("/RealMetadata/GitBranch", "main"), ("/RealMetadata/Version", "2026.1"), ("/Drive/Version", "ignored")]
+    opened = text(await file_tools.wpilog_open(_strings_log(log_dir, "code.wpilog", topics)))
+    assert opened["code"] == {"GitSHA": "a1b2c3d", "GitBranch": "main", "Version": "2026.1"} and "differs" not in str(opened.get("warnings"))
+
+
+async def test_a_log_with_no_build_facts_has_no_code_key(log_dir):
+    assert "code" not in text(await file_tools.wpilog_open(_strings_log(log_dir, "plain.wpilog", [("/Fake/Text", "x")])))
+
+
+async def test_differing_real_and_replay_build_facts_warn_and_the_first_declared_is_shown(log_dir):
+    name = _strings_log(log_dir, "replay.wpilog", [("/RealMetadata/GitSHA", "aaa"), ("/ReplayMetadata/GitSHA", "bbb")])
+    opened = text(await file_tools.wpilog_open(name))
+    assert opened["code"] == {"GitSHA": "aaa"}
+    assert any("differs between /RealMetadata/GitSHA and /ReplayMetadata/GitSHA" in warning for warning in opened["warnings"])

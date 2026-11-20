@@ -5,6 +5,7 @@ from typing import Any, NamedTuple
 from frc_mcp_wpilib.conditions import values_equal
 from frc_mcp_wpilib.values import DEFAULT_PRECISION, shape
 
+from .code_version import code_version
 from .logfile import PRELOAD_ROWS_PER_TOPIC, serialized
 from .loglike import LogLike
 
@@ -90,6 +91,11 @@ def diff(logs: dict[str, LogLike], prefix: str, name_contains: str | None, limit
         kept = {log_id: _capped(topics, limit, omitted, f"{key}.{log_id}") for log_id, topics in section.items() if topics}
         if kept:
             out[key] = kept
+    code_a, code_b = code_version(first)[0], code_version(second)[0]
+    if code_a != code_b:  # whatever the filter, a reader must know the two logs come from different code
+        differing = sorted(key for key in code_a.keys() | code_b.keys() if code_a.get(key) != code_b.get(key))
+        out["code"] = {first_id: {k: code_a.get(k) for k in differing}, second_id: {k: code_b.get(k) for k in differing}}
+        out["warning"] = "These logs come from different code (or one records no build facts), so a changed value may be a code change, not tuning."
     if one.busy or two.busy:
         out["signals_skipped"] = {first_id: one.busy, second_id: two.busy}
     if omitted:
