@@ -11,33 +11,22 @@ The layout read is WPILib's `SwerveModuleState`: a double speed, then a double a
 
 import math
 import struct
-from bisect import bisect_left, bisect_right
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Any, NamedTuple
 
-from .errors import WPILibMCPError
 from .reduce.stats import US_PER_S, percentile
 from .scan_roles import leaf_and_parents
+from .tracking import NothingToCompare, Samples, Window, held_pairs, require_enough
 
 STATE_TYPE = "struct:SwerveModuleState[]"
 # (parent folder, measured leaf, setpoint leaves in order of preference), all lower case
 CONVENTIONS = (("swervestates", "measured", ("setpointsoptimized", "setpoints")), ("drivestate", "modulestates", ("moduletargets",)))
 MODULE_BYTES = 16  # a double speed and a double angle
-MAX_SAMPLES = 3000  # measured updates read per module (evenly spread), so a long log costs no more than a short one
 MAX_OTHERS = 3
-MIN_COMPARED = 10  # fewer measured updates than this say nothing about how a module followed its command
 MOVING_MPS = 0.1  # below this commanded speed a module's angle is not being asked to do anything
 LAG_FACTOR = 2.0  # a module whose p95 error is this many times the median of all modules' is lagging
 LAG_SPEED_MPS, LAG_ANGLE_DEG = 0.3, 10.0  # ...and its error is at least this big, so a tiny difference is never a flag
-
-Samples = Sequence[tuple[int, Any]]  # (time in microseconds, raw value), oldest first
-Window = tuple[int, int]  # (start, end) in microseconds, inclusive
-
-
-class NothingToCompare(WPILibMCPError):
-    """The two arrays cannot be compared: one has no updates, none has a commanded update before it, or the values are not swerve states."""
-
 
 class ModuleState(NamedTuple):
     speed: float  # m/s
@@ -83,30 +72,17 @@ def _wrap_deg(radians: float) -> float:
     return abs((math.degrees(radians) + 180) % 360 - 180)
 
 
-def _sampled(times: Sequence[int], windows: Sequence[Window]) -> list[int]:
-    """Row numbers inside the windows, thinned to at most `MAX_SAMPLES` evenly spread. Rows are in time order, so each window is a slice."""
-    spans = [range(bisect_left(times, lo), bisect_right(times, hi)) for lo, hi in windows]
-    step = max(1, sum(len(r) for r in spans) // MAX_SAMPLES)
-    return [i for r in spans for i in r[::step]]
-
-
 def analyze(measured: Samples, setpoint: Samples, windows: Sequence[Window], origin_us: int) -> dict[str, Any]:
     """Per module: how far its speed and angle were from the command, over the windows. The command is the last setpoint at or before each measured
     update. Angle is compared only while the module was commanded to move. Raises NothingToCompare when there is nothing to compare."""
-    if not measured or not setpoint:
-        raise NothingToCompare("the measured or the commanded array has no updates")
-    s_times = [t for t, _ in setpoint]
     speed_err: defaultdict[int, list[float]] = defaultdict(list)
     angle_err: defaultdict[int, list[float]] = defaultdict(list)
     top_speed: defaultdict[int, float] = defaultdict(float)
     worst: tuple[float, int, int] | None = None  # speed error, module, time
     last_j, last_command = -1, []
-    for i in _sampled([t for t, _ in measured], windows):
-        t, raw = measured[i]
-        if (j := bisect_right(s_times, t) - 1) < 0:
-            continue
+    for t, raw, j, command_raw in held_pairs(measured, setpoint, windows):
         if j != last_j:
-            last_j, last_command = j, decode_states(setpoint[j][1])
+            last_j, last_command = j, decode_states(command_raw)
         for k, (m, s) in enumerate(zip(decode_states(raw), last_command, strict=False)):
             err = abs(m.speed - s.speed)
             speed_err[k].append(err)
@@ -115,10 +91,8 @@ def analyze(measured: Samples, setpoint: Samples, windows: Sequence[Window], ori
                 angle_err[k].append(_wrap_deg(m.angle - s.angle))
             if worst is None or err > worst[0]:
                 worst = (err, k, t)
-    if worst is None:
-        raise NothingToCompare("no measured update has a commanded one before it")
-    if (most := max(len(errors) for errors in speed_err.values())) < MIN_COMPARED:
-        raise NothingToCompare(f"only {most} measured update(s) could be compared (at least {MIN_COMPARED} are needed)")
+    require_enough(max((len(errors) for errors in speed_err.values()), default=0))
+    assert worst is not None  # require_enough raised when there were no pairs
     modules = []
     for k in sorted(speed_err):
         row: dict[str, Any] = {"module": k, "n": len(speed_err[k]), "speed_err_mean_mps": round(sum(speed_err[k]) / len(speed_err[k]), 3),

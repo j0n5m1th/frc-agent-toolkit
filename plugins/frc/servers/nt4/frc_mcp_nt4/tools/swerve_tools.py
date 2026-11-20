@@ -7,13 +7,12 @@ from pydantic import Field
 
 from frc_mcp_core.reply import reply, with_status
 from frc_mcp_wpilib import swerve as core
-from frc_mcp_wpilib.swerve import NothingToCompare
+from frc_mcp_wpilib.tracking import NothingToCompare
 
 from ..app import LOCAL_STATE, mcp, tool_errors
-from ..capture import CaptureSpec
 from ..session import session
+from .live import first_time, record_rows, topic_types
 
-RATE_HZ = 100  # enough to take every update of a 50 Hz publisher
 FAR_FUTURE_US = 2**62
 
 
@@ -26,14 +25,12 @@ async def nt4_swerve(
 ) -> ToolResult:
     """Swerve, live: record the measured and commanded module states and say how closely each module followed its command and which one lags. Reads only; someone must be driving the robot."""
     async with session.operation():
-        pair = core.pick_pair({t.name: t.type_str for t in session.inst.getTopicInfo("")}, measured, setpoint)
+        pair = core.pick_pair(topic_types(), measured, setpoint)
         if pair.measured is None or pair.setpoint is None:
             why = "pass both measured= and setpoint= as SwerveModuleState[] topics" if measured or setpoint else "no measured and commanded SwerveModuleState[] pair follows a known name; pass measured= and setpoint="
             return reply(with_status({"measured": pair.measured, "setpoint": pair.setpoint, **({"candidates": pair.others} if pair.others else {})}, (), reason=why))
-        spec = CaptureSpec(topics=[pair.measured, pair.setpoint], prefix=False, rate_hz=RATE_HZ, duration_s=duration_s, all_changes=True)
-        samples = await session.record_samples(spec)
-    rows = {name: [(round(t_ms * 1000), value) for t_ms, value, _ in samples.get(name, ())] for name in (pair.measured, pair.setpoint)}
-    first = min((r[0][0] for r in rows.values() if r), default=0)
+        rows = await record_rows([pair.measured, pair.setpoint], duration_s)
+    first = first_time(rows)
     try:
         analysis = core.analyze(rows[pair.measured], rows[pair.setpoint], [(0, FAR_FUTURE_US)], first)
     except NothingToCompare as e:

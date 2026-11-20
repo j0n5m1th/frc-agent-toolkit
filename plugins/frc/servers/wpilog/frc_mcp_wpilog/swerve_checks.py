@@ -9,7 +9,8 @@ from typing import Any
 from frc_mcp_core.reply import with_status
 from frc_mcp_wpilib import swerve as core
 from frc_mcp_wpilib.reduce.stats import US_PER_MS
-from frc_mcp_wpilib.swerve import NothingToCompare, Pair
+from frc_mcp_wpilib.swerve import Pair
+from frc_mcp_wpilib.tracking import NothingToCompare
 
 from .errors import WPILogError
 from .logfile import serialized
