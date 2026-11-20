@@ -372,3 +372,37 @@ async def test_an_integer_topic_counts_as_a_number(log_dir):
     w.save(log_dir / "int.wpilog")
     await file_tools.wpilog_open("int.wpilog")
     assert text(await data_tools.wpilog_scan())["link"]["can_util_pct"] == 95.0
+
+
+async def test_a_query_that_finds_nothing_says_no_match_and_a_good_one_says_nothing_extra(log_dir):
+    w = LogWriter()
+    entry = w.start("/Fake/Value", "double", "", BASE)
+    for n in range(5):
+        w.append(entry, float(n), at(n))
+    w.save(log_dir / "status.wpilog")
+    await file_tools.wpilog_open("status.wpilog")
+    missing = text(await data_tools.wpilog_query(topics=["/No/Such"]))
+    assert missing["status"] == "no_match" and "hint" in missing
+    assert "status" not in text(await data_tools.wpilog_query(topics=["/Fake/Value"]))
+    mixed = text(await data_tools.wpilog_query(topics=["/Fake/Value", "/No/Such"]))
+    assert mixed["status"] == "partial"
+
+
+async def test_a_text_search_in_a_log_with_no_text_topic_is_not_no_errors(log_dir):
+    w = LogWriter()
+    entry = w.start("/Fake/Value", "double", "", BASE)
+    w.append(entry, 1.0, BASE)
+    w.save(log_dir / "notext.wpilog")
+    await file_tools.wpilog_open("notext.wpilog")
+    out = text(await data_tools.wpilog_text())
+    assert out["status"] == "no_match" and out["n"] == 0 and "no text topic" in out["reason"]
+
+
+async def test_a_text_search_of_named_topics_that_are_missing_says_so(log_dir):
+    w = LogWriter()
+    entry = w.start("/Fake/Value", "double", "", BASE)
+    w.append(entry, 1.0, BASE)
+    w.save(log_dir / "named.wpilog")
+    await file_tools.wpilog_open("named.wpilog")
+    out = text(await data_tools.wpilog_text(topics=["/No/Such"]))
+    assert out["status"] == "no_match" and "named topics" in out["reason"]

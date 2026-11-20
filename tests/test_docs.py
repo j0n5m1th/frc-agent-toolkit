@@ -143,10 +143,10 @@ def test_the_sim_vscode_and_jfr_guides_name_every_tool_of_their_server():
 
 
 def test_the_other_docs_keep_to_their_length():
-    # Targets from the docs plan; the band is -25% and +30%. ARCHITECTURE.md is 2850 (was 2200) because it also holds the
+    # Targets from the docs plan; the band is -25% and +30%. ARCHITECTURE.md is 3000 (was 2850 before the result-status note, 2200 before that) because it also holds the
     # design notes moved out of code comments. GETTING_STARTED.md is 950 (was 800) and SETTINGS.md 2350 (was 2100) after
     # review round 1 added the first-run steps, the plugin's fixed folders and the hook-failure note. Review round 2 (second pass) raised SYSTEMCORE to 1250 (IPv6 host rule) and SETTINGS to 2550 (minimum version, hook runs, redirects, `.env` quote). Learning mode raised SETTINGS to 2850 (one table row). Review round 3 raised SETTINGS to 2800 (`.env` rules, masked errors, NT4 host rule, drive-root setting). Review round 2 raised GETTING_STARTED to 1000, JFR and FAQ to 550 and SETTINGS to 2450 (no-uv note, too-broad folder, redirect, port 1740, reconnect).
-    for guide, target in (("CTRE.md", 1800), ("SYSTEMCORE.md", 1250), ("SIM.md", 500), ("VSCODE.md", 500), ("JFR.md", 550), ("GETTING_STARTED.md", 1000), ("FAQ.md", 550), ("ARCHITECTURE.md", 2850)):
+    for guide, target in (("CTRE.md", 1800), ("SYSTEMCORE.md", 1250), ("SIM.md", 500), ("VSCODE.md", 500), ("JFR.md", 550), ("GETTING_STARTED.md", 1000), ("FAQ.md", 550), ("ARCHITECTURE.md", 3000)):
         words = len((ROOT / "docs" / guide).read_text(encoding="utf-8").split())
         low, high = int(target * 0.75), int(target * 1.3)
         assert low <= words <= high, f"docs/{guide} has {words} words (allowed {low} to {high})"

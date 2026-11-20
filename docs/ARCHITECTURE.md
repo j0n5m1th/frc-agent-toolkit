@@ -30,6 +30,7 @@ For contributors. This file explains why the code is shaped the way it is. How t
 
 ## Reply budgets
 
+- **A reply that is not a full answer says so (`with_status`).** `status` is `no_match` when nothing was found (every topic failed, or there was nothing to search) and `partial` when some topics failed. A good reply gets no `status`, so it costs no tokens. An empty success looks like "no problem", which is the most damaging thing a tool can say, so the `hint` says that finding nothing is not proof.
 - **Tools return `reply()`, never a `dict`.** FastMCP sends a dict twice (structured and as text), which doubles the tokens. `reply()` prints compact JSON, and when it is too big it returns a valid `{"partial": ..., "omitted_items": n}` instead of a chopped string.
 - **The budget is adaptive:** 4,000 characters plus 500 per topic, up to a ceiling of 12,000. `MCP_WPILIB_MAX_CHARS` replaces it with a fixed cap.
 - **The ceiling of 12,000 is kept on purpose.** The benchmark replies were tiny (the largest was 451 characters), so that data cannot justify paging earlier. Re-check with a real match log before lowering it.

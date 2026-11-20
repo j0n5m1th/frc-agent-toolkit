@@ -7,7 +7,7 @@ from fastmcp.exceptions import ToolError
 from fastmcp.tools import ToolResult
 from pydantic import Field
 
-from frc_mcp_core.reply import reply
+from frc_mcp_core.reply import reply, with_status
 from frc_mcp_wpilib.conditions import CompareOp
 from frc_mcp_wpilib.values import DEFAULT_PRECISION
 
@@ -52,7 +52,7 @@ async def wpilog_get_values(
     """Log values at a moment: each topic's last update at or before it, and when it happened. Structs decode to dotted fields."""
     opened = logs.get(log)
     out = await asyncio.to_thread(queries.values_at, opened, topics, at_ms, fields, align)
-    return reply(out, topics=len(out))
+    return reply(with_status(out), topics=len(out))
 
 
 @mcp.tool(annotations={**READ_ONLY_LOCAL, "title": "Query a log"}, output_schema=None)
@@ -87,7 +87,7 @@ async def wpilog_query(
         out = await asyncio.to_thread(queries.compare, picked, topics, spec, window)
         return reply(out, ("data",))
     out = await asyncio.to_thread(queries.query, logs.get(log), topics, spec, window)
-    return reply(out, ("data", "constants"))
+    return reply(with_status(out, out["data"].values(), ok=len(out.get("constants", ()))), ("data", "constants"))  # a topic that never changed is an answer too
 
 
 @mcp.tool(annotations={**READ_ONLY_LOCAL, "title": "When a condition held"}, output_schema=None)
@@ -141,6 +141,9 @@ async def wpilog_text(
     """Log messages, console output, errors and faults, oldest first. Use it to answer 'what errors or warnings happened?'"""
     opened = logs.get(log)
     out = await asyncio.to_thread(queries.search_text, opened, topics, name_contains, queries.Range(align, since_ms, until_ms), limit)
+    if not out["searched"]:  # no text topic to look in: that is not "no errors"
+        reason = "none of the named topics are in this log" if out.get("not_in_log") else "this log has no text topic to search"
+        out = with_status(out, (), reason=reason)
     return reply(out)
 
 

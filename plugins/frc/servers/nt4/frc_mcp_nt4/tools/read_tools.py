@@ -6,7 +6,7 @@ from typing import Annotated, Any
 from fastmcp.tools import ToolResult
 from pydantic import Field
 
-from frc_mcp_core.reply import reply, topic_err
+from frc_mcp_core.reply import reply, topic_err, with_status
 from frc_mcp_wpilib import groups
 from frc_mcp_wpilib.conditions import WaitOp
 from frc_mcp_wpilib.values import DEFAULT_PRECISION, shape, type_field
@@ -48,7 +48,7 @@ async def nt4_get_values(
         got = await session.get_values(topics, timeout_s=wait_s)
         spec = ReplySpec(fields=fields, age=_age_context(include_age), timestamps=timestamps)
         out = {name: reply_entry(res, replace(spec, unit=session.topic_unit(name))) for name, res in got.items()}
-        return reply(out, topics=len(out))
+        return reply(with_status(out), topics=len(out))
 
 
 @mcp.tool(annotations={**READ_ONLY, "title": "Get widget groups"}, output_schema=None)
@@ -61,7 +61,7 @@ async def nt4_get_widgets(
 ) -> ToolResult:
     """Dashboard widgets' current values, grouped. Choosers return {options, default, active, selected, current}; current is a candidate, not proof of the robot's choice."""
     async with session.operation():
-        return reply(await _read_groups(bases, wait_s, fields, include_age), topics=len(bases))
+        return reply(with_status(await _read_groups(bases, wait_s, fields, include_age)), topics=len(bases))
 
 
 async def _read_group(base: str, wait_s: float, fields: list[str] | None, include_age: bool) -> groups.ChooserReply | groups.PlainGroupReply | dict[str, str]:

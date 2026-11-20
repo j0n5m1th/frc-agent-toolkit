@@ -2,6 +2,7 @@
 
 import json
 import math
+from collections.abc import Iterable
 from typing import Any
 
 from fastmcp.tools import ToolResult
@@ -54,6 +55,34 @@ def max_response_budget() -> int:
 def topic_err(detail: str) -> dict[str, str]:
     """The one shape every tool uses for a per-topic failure, so a caller checks `"err" in item` everywhere."""
     return {"err": detail}
+
+
+NO_MATCH_HINT = "Finding nothing is not proof that nothing is wrong. Check the names and the time window."
+
+
+def is_topic_err(item: Any) -> bool:
+    """True for a per-topic failure made by `topic_err` (or any dict with an `err` key)."""
+    return isinstance(item, dict) and "err" in item
+
+
+def with_status(data: dict[str, Any], results: Iterable[Any] | None = None, *, ok: int = 0, reason: str | None = None) -> dict[str, Any]:
+    """`data` with a `status` first, only when the reply is not a full answer, so a good reply costs nothing extra.
+
+    `results` are the per-topic results the reply is built from (default: the values of `data`; `ok` counts good answers that are not in it,
+    such as collapsed constants). `no_match` means there were none or every one failed (`topic_err`): an empty answer, which must not be read as
+    "no problem". `partial` means some failed. An existing `hint` is kept, and `reason` says why. A reply keyed by topic name gets `status` and
+    `hint` beside the names; a topic name never has those spellings.
+    An empty success is the most damaging failure, because it looks like an answer.
+    """
+    total = failed = 0
+    for item in data.values() if results is None else results:
+        total += 1
+        failed += is_topic_err(item)
+    if failed == 0 and total + ok:
+        return data
+    if failed < total + ok:
+        return {"status": "partial", **data}
+    return {"status": "no_match", **({"reason": reason} if reason else {}), "hint": NO_MATCH_HINT, **data}
 
 
 def compact_json(data: Any) -> str:
