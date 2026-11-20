@@ -407,7 +407,7 @@ def test_a_query_that_must_read_a_changed_file_says_to_reopen(tmp_path):
     path = save(tmp_path, w)
     log = LogFile(path)
     assert "/big" not in log._cache
-    path.write_bytes(path.read_bytes() + b"\x00")
+    path.write_bytes(path.read_bytes()[:-3])  # replaced by a shorter file
     with pytest.raises(WPILogError, match="changed on disk.*wpilog_open"):
         log.rows(["/big"])
 
@@ -509,3 +509,17 @@ def test_opening_logs_while_another_thread_queries_and_evicts_never_raises(tmp_p
         stop.set()
         worker.join(20)
     assert errors == [] and not worker.is_alive()
+
+
+def test_a_log_that_only_grew_still_reads_the_records_it_was_indexed_with(tmp_path):
+    w = LogWriter()
+    e = w.start("/big", "double", "", 0)
+    count = logfile_module.PRELOAD_ROWS_PER_TOPIC + 50
+    for i in range(count):
+        w.append(e, float(i), i)
+    log = LogFile(save(tmp_path, w))
+    w.append(e, -1.0, 10**9)  # a log still being recorded: one more record at the end
+    save(tmp_path, w)
+    assert log.is_current() is False and log.is_replaced() is False
+    rows = log.rows(["/big"])["/big"]
+    assert len(rows) == count and rows[-1][1] == float(count - 1)

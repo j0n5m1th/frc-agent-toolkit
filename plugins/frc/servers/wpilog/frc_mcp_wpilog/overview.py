@@ -9,7 +9,7 @@ from .loglike import LogLike
 
 
 @serialized
-def overview(log: LogLike, log_id: str) -> dict[str, Any]:
+def overview(log: LogLike, log_id: str, reloaded: bool = False) -> dict[str, Any]:
     """Facts a student wants first. Times are seconds since the start of the log."""
     out: dict[str, Any] = {
         "log": log_id,
@@ -41,6 +41,8 @@ def overview(log: LogLike, log_id: str) -> dict[str, Any]:
         causes = ", ".join(f"{count} {reason}" for reason, count in log.skipped_reasons.items() if count)
         warnings.append(f"{log.skipped_records} records could not be read and were skipped"
                         + (f" ({causes})" if causes else "") + ".")
+    if reloaded:
+        warnings.append("This file changed on disk since it was last opened, so it was read again. Answers from earlier calls came from the old file.")
     warnings += code_warnings
     if warnings:
         out["warnings"] = warnings

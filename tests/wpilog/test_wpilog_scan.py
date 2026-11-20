@@ -444,3 +444,14 @@ async def test_differing_real_and_replay_build_facts_warn_and_the_first_declared
     opened = text(await file_tools.wpilog_open(name))
     assert opened["code"] == {"GitSHA": "aaa"}
     assert any("differs between /RealMetadata/GitSHA and /ReplayMetadata/GitSHA" in warning for warning in opened["warnings"])
+
+
+async def test_opening_a_changed_file_again_warns_that_earlier_answers_came_from_the_old_file(log_dir):
+    path = log_dir / "sample.wpilog"
+    assert "read again" not in str(text(await file_tools.wpilog_open("sample.wpilog")).get("warnings"))
+    path.write_bytes(path.read_bytes()[:-3])  # replaced by a shorter file
+    with pytest.raises(Exception, match="changed on disk"):
+        await data_tools.wpilog_scan()
+    again = text(await file_tools.wpilog_open("sample.wpilog"))
+    assert any("read again" in warning for warning in again["warnings"])
+    assert "read again" not in str(text(await file_tools.wpilog_open("sample.wpilog")).get("warnings"))

@@ -136,6 +136,8 @@ Time zero is when the Driver Station started the log. Try: "When did the battery
 
 ## Limits
 
+A log still being recorded can grow after you open it: queries keep answering from the records that were there when you opened it. If the file is replaced or gets shorter, queries on it fail with a message to open it again, instead of mixing old and new data. Opening a changed file again reads it fresh (under a new id, because the old index is dropped) and warns once that earlier answers came from the old file.
+
 `wpilog_open` shows which robot code made the log (`code`) when the log records text such as `/RealMetadata/GitSHA`, `GitBranch`, `BuildDate` or `Version` (AdvantageKit logs these). Check out that version when you need to know what a topic means. `wpilog_diff` says when two logs come from different code, so a changed value may be a code change, not tuning.
 
 A `summary` of a signal with at least 10 updates says how it is logged (`sampling`): `periodic` (every loop), `change_only` (only when the value changes, so a long gap is a hold, not missing data, and a mean counts updates, not seconds; use `reduce=time_weighted` for a mean over time) or `event`. It is judged from the first 5000 updates, and left out when the data has gaps or is out of order.

@@ -250,6 +250,9 @@ class SyncedLog:
     def is_current(self) -> bool:
         return all(p.is_current() for p in self.parts.values())
 
+    def is_replaced(self) -> bool:
+        return any(p.is_replaced() for p in self.parts.values())
+
 
 def build(view_id: str, parts: dict[str, LogLike], method: Method, offsets_ms: list[float] | None) -> tuple[SyncedLog, list[Placement]]:
     """Sync `parts` (the first sets the clock) and return the view and how each log was placed.
