@@ -9,6 +9,10 @@ More: [how each server is built](ARCHITECTURE_SERVERS.md) and [design notes](ARC
 - **Eleven small servers, not one big one.** A tool's schema is paid for in every session that loads it. A person reading last night's log should not pay for write tools, and a person on the bench should not pay for CTRE tools.
 - **One repository, one plugin folder.** Everything that ships is under `plugins/frc/`: `servers/<key>/` (one package per server) and `lib/<name>/` (code the servers share).  Tests, docs and evaluations stay outside.
 
+## Live and log parity
+
+What you can ask of a recorded log you can ask of the live robot, and the other way round. `tests/common/test_parity.py` lists the pairs (`wpilog_topics` and `nt4_list_topics`, `wpilog_scan` and `nt4_scan`, `wpilog_swerve` and `nt4_swerve`, and so on) and fails when a tool has neither a partner nor a stated reason to have none (a log has no console text to write to, the Systemcore's own status topics are not in a log). Each tool does one job: `wpilog_scan` looks for usual trouble, `wpilog_swerve` checks the swerve modules, `wpilog_query` reduces any signal. A generic tool beside a specialized one is fine; copying one tool's checks into another is not. The rules both sides share (the scan, the swerve check, the reductions, the topic naming conventions) live in `frc_mcp_wpilib`, and a server only supplies its source: rows, topics and a clock.
+
 ## Layering
 
 - **`frc_mcp_core` imports nothing from this repo.** It holds what every server does the same way: the `ServerSpec`, lean schemas, the core/full switch, the command line, the size-bounded `reply()`, the settings readers, the allowed-folders rule and the process rules.

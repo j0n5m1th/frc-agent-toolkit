@@ -39,6 +39,7 @@ You do not need to name tools. Describe what you want and the assistant picks on
 | `nt4_get_values` | The value of some topics right now | "What is the arm angle?" |
 | `nt4_get_widgets` | Dashboard widgets such as autonomous choosers, one object each | "What does the Auto Chooser say?" |
 | `nt4_watch` | Records for a few seconds and returns one summary | "Watch the arm angle for 10 seconds." |
+| `nt4_scan` | The usual trouble, live: loop time, battery, brownouts, link and CAN numbers, over a few seconds. The same checks as `wpilog_scan` | "Scan the robot for problems." |
 | `nt4_swerve` | Swerve, live: records the module states while the robot is driven and says which module lags its command | "Which swerve module is off?" |
 | `nt4_wait_for` | Waits until a value meets a condition | "Tell me when the current goes above 40 A." |
 | `nt4_capture_start`, `nt4_capture_query`, `nt4_capture_stop` | Record in the background, ask many questions, then free it | "Record the drive speed for 30 seconds." |

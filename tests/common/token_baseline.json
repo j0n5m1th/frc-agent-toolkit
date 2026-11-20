@@ -2,29 +2,29 @@
  "nt4": {
   "full": {
    "gates-off": {
-    "tools": 13,
-    "names": 141,
-    "defs": 3408,
+    "tools": 14,
+    "names": 151,
+    "defs": 3520,
     "instructions": 48
    },
    "gates-on": {
-    "tools": 15,
-    "names": 165,
-    "defs": 3828,
+    "tools": 16,
+    "names": 175,
+    "defs": 3940,
     "instructions": 48
    }
   },
   "core": {
    "gates-off": {
-    "tools": 10,
-    "names": 105,
-    "defs": 2175,
+    "tools": 11,
+    "names": 115,
+    "defs": 2287,
     "instructions": 36
    },
    "gates-on": {
-    "tools": 10,
-    "names": 105,
-    "defs": 2175,
+    "tools": 11,
+    "names": 115,
+    "defs": 2287,
     "instructions": 36
    }
   }

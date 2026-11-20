@@ -130,19 +130,10 @@ async def test_an_angle_across_the_wrap_is_a_small_error(log_dir):
     assert angle == pytest.approx(math.degrees(2 * math.pi - 6.2), abs=0.1)
 
 
-async def test_scan_adds_a_short_swerve_block_and_the_flag(swerve_log):
+async def test_scan_leaves_the_drivetrain_to_the_swerve_tool(swerve_log):
     await file_tools.wpilog_open(swerve_log)
     out = text(await data_tools.wpilog_scan())
-    assert out["swerve"]["measured"] == MEASURED and len(out["swerve"]["modules"]) == 4 and "top_speed_mps" not in out["swerve"]["modules"][0]
-    assert any("swerve module 2 lags" in f for f in out["flags"])
-
-
-async def test_scan_has_no_swerve_block_for_a_robot_without_the_arrays(log_dir):
-    w = LogWriter()
-    w.append(w.start("NT:/Fake/Value", "double", "", BASE), 1.0, BASE)
-    w.save(log_dir / "plain.wpilog")
-    await file_tools.wpilog_open("plain.wpilog")
-    assert "swerve" not in text(await data_tools.wpilog_scan())
+    assert "swerve" not in out and not any("swerve" in f for f in out["flags"])  # one tool, one job: wpilog_swerve checks the modules
 
 
 async def test_align_alone_does_not_widen_the_enabled_default(swerve_log):

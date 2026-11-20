@@ -14,7 +14,6 @@ from frc_mcp_wpilib.swerve import NothingToCompare, Pair
 from .errors import WPILogError
 from .logfile import serialized
 from .loglike import LogLike
-from .rows import LogRow
 from .timeline import Phase, origin_us, phases
 from .windows import FIND_NAMES_HINT, NOT_IN_LOG, Range
 
@@ -29,21 +28,6 @@ def analysis_windows(found: Sequence[Phase], start_us: int, end_us: int, lo_us: 
     if lo_us is not None or hi_us is not None:
         return [(lo_us if lo_us is not None else start_us, hi_us if hi_us is not None else end_us)]
     return [(p.start_us, p.end_us) for p in found] or [(start_us, end_us)]
-
-
-def scan_block(rows: dict[str, Sequence[LogRow]], pair: Pair, windows: Sequence[core.Window], origin: int) -> tuple[dict[str, Any], list[str]]:
-    """The swerve block of a scan, kept short: the worst moment, and the modules only when one lags (`wpilog_swerve` has the detail)."""
-    assert pair.measured and pair.setpoint
-    try:
-        analysis = core.analyze(rows[pair.measured], rows[pair.setpoint], windows, origin)
-    except NothingToCompare as e:
-        return {"checked": False, "why": str(e)}, []
-    flags = core.lagging(analysis["modules"])
-    block: dict[str, Any] = {"measured": pair.measured, "worst_speed_err": analysis["worst_speed_err"]}
-    if flags:
-        keep = ("module", "speed_err_p95_mps", "angle_err_p95_deg")
-        block["modules"] = [{k: m[k] for k in keep if k in m} for m in analysis["modules"]]
-    return block, flags
 
 
 @serialized

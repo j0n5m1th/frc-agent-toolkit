@@ -18,6 +18,7 @@ from typing import Any, NamedTuple
 
 from .errors import WPILibMCPError
 from .reduce.stats import US_PER_S, percentile
+from .scan_roles import leaf_and_parents
 
 STATE_TYPE = "struct:SwerveModuleState[]"
 # (parent folder, measured leaf, setpoint leaves in order of preference), all lower case
@@ -41,12 +42,6 @@ class NothingToCompare(WPILibMCPError):
 class ModuleState(NamedTuple):
     speed: float  # m/s
     angle: float  # radians
-
-
-def leaf_and_parents(name: str) -> tuple[str, list[str]]:
-    """The last path segment and the folders above it, lower case, with an index such as `[0]` stripped from each folder."""
-    *parents, leaf = name.lower().replace(":", "/").split("/")
-    return leaf, [p.split("[")[0] for p in parents]
 
 
 class Pair(NamedTuple):

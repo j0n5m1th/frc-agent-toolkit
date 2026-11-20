@@ -4,8 +4,9 @@ A student can then tell which version of the code a match ran, and look at that 
 AdvantageKit's `BuildConstants`.
 """
 
+from frc_mcp_wpilib.scan_roles import leaf_and_parents
+
 from .loglike import LogLike
-from .signal_roles import leaf_and_parents
 
 KEYS = {key.lower(): key for key in ("GitSHA", "GitBranch", "GitDirty", "GitDate", "BuildDate", "ProjectName", "Version")}
 MAX_CHARS = 80

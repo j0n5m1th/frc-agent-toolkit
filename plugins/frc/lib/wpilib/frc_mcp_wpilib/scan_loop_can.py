@@ -6,15 +6,12 @@ AdvantageKit logs them under a `CANBus` path), never a topic that only has a sug
 
 from bisect import bisect_right
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
-from frc_mcp_wpilib.reduce.stats import percentile
-
-from .logfile import Topic
-from .rows import LogRow, finite_numbers
-from .signal_roles import MAX_CANDIDATES, leaf_and_parents
-from .timeline import Phase
+from .reduce.stats import percentile
+from .scan_roles import MAX_CANDIDATES, ScanTopic, leaf_and_parents
+from .scan_rows import Row, Window, finite_numbers
 
 LOOP_PERIOD_MS = 20.0  # the standard 50 Hz robot loop
 BOOT_CYCLE_FACTOR = 10  # a first loop this many times the median is the slow boot cycle, left out
@@ -29,21 +26,21 @@ COUNTERS = {
 }
 
 
-def loop_topics(topics: Sequence[Topic]) -> tuple[Topic | None, Topic | None, list[str]]:
+def loop_topics(topics: Sequence[ScanTopic]) -> tuple[ScanTopic | None, ScanTopic | None, list[str]]:
     """The full-cycle and user-code loop time topics (under `LoggedRobot`), and name-only candidates when there is no full-cycle topic."""
-    found: dict[str, Topic] = {}
+    found: dict[str, ScanTopic] = {}
     for t in topics:
         leaf, parents = leaf_and_parents(t.name)
         if t.is_numeric and leaf in (LOOP_FULL, LOOP_USER) and "loggedrobot" in parents:
             found.setdefault(leaf, t)
     full = found.get(LOOP_FULL)
-    named = sorted((t for t in topics if t.is_numeric and any(w in t.name.lower() for w in LOOP_WORDS) and t not in found.values()), key=lambda t: (-t.count, t.name))
+    named = sorted((t for t in topics if t.is_numeric and any(w in t.name.lower() for w in LOOP_WORDS) and t not in found.values()), key=lambda t: (-t.updates, t.name))
     return full, found.get(LOOP_USER), ([] if full else [t.name for t in named[:MAX_CANDIDATES]])
 
 
-def counter_topics(topics: Sequence[Topic]) -> dict[str, dict[str, Topic]]:
+def counter_topics(topics: Sequence[ScanTopic]) -> dict[str, dict[str, ScanTopic]]:
     """CAN bus path -> {tec, rec, bus_off, tx_full, util} -> topic, found by exact field name under a `CAN` path (never a substring such as "can")."""
-    buses: dict[str, dict[str, Topic]] = defaultdict(dict)
+    buses: dict[str, dict[str, ScanTopic]] = defaultdict(dict)
     for t in topics:
         leaf, parents = leaf_and_parents(t.name)
         if t.is_numeric and leaf in COUNTERS and any("can" in p for p in parents):
@@ -51,15 +48,15 @@ def counter_topics(topics: Sequence[Topic]) -> dict[str, dict[str, Topic]]:
     return dict(buses)
 
 
-def _runs(rows: Sequence[LogRow], found: Sequence[Phase]) -> list[list[float]]:
+def _runs(rows: Sequence[Row], windows: Sequence[Window]) -> list[list[float]]:
     """The finite values inside each enabled period, one list per period (one list of every value when the log has no Driver Station data)."""
     numbers = finite_numbers(rows)
-    if not found:
+    if not windows:
         return [[float(v) for _, v in numbers]]
-    starts = [p.start_us for p in found]
-    runs: list[list[float]] = [[] for _ in found]
+    starts = [start for start, _ in windows]
+    runs: list[list[float]] = [[] for _ in windows]
     for t, v in numbers:
-        if (i := bisect_right(starts, t) - 1) >= 0 and t <= found[i].end_us:
+        if (i := bisect_right(starts, t) - 1) >= 0 and t <= windows[i][1]:
             runs[i].append(float(v))
     return runs
 
@@ -69,22 +66,22 @@ def _rise(run: Sequence[float]) -> float:
     return sum(max(0.0, b - a) for a, b in zip(run, run[1:], strict=False))
 
 
-def _loop_values(rows: Sequence[LogRow], found: Sequence[Phase]) -> list[float]:
+def _loop_values(rows: Sequence[Row], windows: Sequence[Window]) -> list[float]:
     """The loop times while enabled, in time order, without the slow boot cycle."""
-    values = [v for run in _runs(rows, found) for v in run]
+    values = [v for run in _runs(rows, windows) for v in run]
     if len(values) > 1 and values[0] > BOOT_CYCLE_FACTOR * percentile(sorted(values), 50):
         values = values[1:]
     return values
 
 
-def loop_check(rows: dict[str, Sequence[LogRow]], full: Topic | None, user: Topic | None, candidates: list[str], found: Sequence[Phase]) -> tuple[dict[str, Any], list[str]]:
+def loop_check(rows: Mapping[str, Sequence[Row]], full: ScanTopic | None, user: ScanTopic | None, candidates: list[str], windows: Sequence[Window]) -> tuple[dict[str, Any], list[str]]:
     """The loop-time block and its flags. Times in the enabled periods only (all, when there is no Driver Station data)."""
     if full is None:
         block: dict[str, Any] = {"checked": False, "why": "no LoggedRobot/FullCycleMS topic"}
         if candidates:
             block |= {"candidates": candidates, "hint": "named like a loop time but not used; wpilog_query one"}
         return block, []
-    values = _loop_values(rows[full.name], found)
+    values = _loop_values(rows[full.name], windows)
     if not values:
         return {"checked": False, "topic": full.name, "why": "no loop times while enabled"}, []
     ordered = sorted(values)
@@ -92,8 +89,8 @@ def loop_check(rows: dict[str, Sequence[LogRow]], full: Topic | None, user: Topi
         "n": len(values), "median_ms": round(percentile(ordered, 50), 1), "p95_ms": round(percentile(ordered, 95), 1), "max_ms": round(ordered[-1], 1),
         "over_period_pct": round(100 * sum(v > LOOP_PERIOD_MS for v in values) / len(values), 1),
     }
-    block = {"topic": full.name, "scope": "enabled" if found else "all", **stats}
-    if user is not None and (user_values := _loop_values(rows[user.name], found)):
+    block = {"topic": full.name, "scope": "enabled" if windows else "all", **stats}
+    if user is not None and (user_values := _loop_values(rows[user.name], windows)):
         block["user_code_p95_ms"] = round(percentile(sorted(user_values), 95), 1)  # robot code alone, without the logging a full cycle includes
     flags = []
     if stats["p95_ms"] > LOOP_PERIOD_MS:
@@ -103,11 +100,11 @@ def loop_check(rows: dict[str, Sequence[LogRow]], full: Topic | None, user: Topi
     return block, flags
 
 
-def _bus_row(bus: str, fields: dict[str, Topic], rows: dict[str, Sequence[LogRow]], found: Sequence[Phase]) -> dict[str, Any]:
+def _bus_row(bus: str, fields: dict[str, ScanTopic], rows: Mapping[str, Sequence[Row]], windows: Sequence[Window]) -> dict[str, Any]:
     """One bus's numbers while enabled: the highest TEC, REC and utilization (levels), and the rise of the counts that only grow."""
     row: dict[str, Any] = {"bus": bus.rsplit("/", 1)[-1] or bus}
     for key, topic in sorted(fields.items()):
-        runs = [run for run in _runs(rows[topic.name], found) if run]
+        runs = [run for run in _runs(rows[topic.name], windows) if run]
         if not runs:
             continue
         if key == "util":
@@ -137,7 +134,7 @@ def _bus_flags(row: dict[str, Any]) -> list[str]:
     return flags
 
 
-def can_check(rows: dict[str, Sequence[LogRow]], buses: dict[str, dict[str, Topic]], found: Sequence[Phase]) -> tuple[list[dict[str, Any]], list[str]]:
+def can_check(rows: Mapping[str, Sequence[Row]], buses: dict[str, dict[str, ScanTopic]], windows: Sequence[Window]) -> tuple[list[dict[str, Any]], list[str]]:
     """One row per CAN bus, and the flags they raise."""
-    out = [row for bus, fields in sorted(buses.items()) if len(row := _bus_row(bus, fields, rows, found)) > 1]
+    out = [row for bus, fields in sorted(buses.items()) if len(row := _bus_row(bus, fields, rows, windows)) > 1]
     return out, [flag for row in out for flag in _bus_flags(row)]

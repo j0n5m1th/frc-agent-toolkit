@@ -340,7 +340,7 @@ async def test_the_caller_can_name_the_battery_and_a_wrong_name_is_an_error_not_
     await file_tools.wpilog_open(_log_with(log_dir, "named.wpilog", [("/Robot/Rail", 8.0), ("/SystemStats/BatteryVoltage", 12.0)]))
     out = text(await data_tools.wpilog_scan(battery="/Robot/Rail"))["battery"]
     assert out["topic"] == "/Robot/Rail" and out["chosen_by"] == "explicit" and out["min_v"] == 8.0
-    with pytest.raises(Exception, match="not in this log"):
+    with pytest.raises(Exception, match="not among the topics"):
         await data_tools.wpilog_scan(battery="/No/Such")
 
 
