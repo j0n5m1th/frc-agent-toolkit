@@ -11,7 +11,7 @@ becomes a device name only through the map the robot code publishes (`robot_info
 
 import re
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, NamedTuple
 
 from .reduce.stats import US_PER_S
@@ -118,26 +118,32 @@ def _together(windows: Sequence[Window], t0: int, t1: int) -> bool:
     return not windows or any(lo <= t0 and t1 <= hi for lo, hi in windows)
 
 
-def analyze_power(voltage: Sequence[Row], flags: Sequence[Sequence[Row]], series: Sequence[Series], threshold: tuple[float, str], windows: Sequence[Window],
+def analyze_power(voltage: Sequence[Row], flags: Sequence[Sequence[Row]], series: Iterable[Series], threshold: tuple[float, str], windows: Sequence[Window],
                   origin_us: int, labels: Mapping[int, str] | None = None) -> dict[str, Any]:
     """The battery low point, the brownouts, the devices with the highest current, and what each was drawing when the battery was lowest.
 
     `voltage` and the current rows are `(microseconds, value)`. Raises NothingToCompare when there is nothing to check."""
     brownout_v, basis = threshold
     volts = [r for r in within(finite_numbers(voltage), windows) if float(r[1]) > 0]  # 0 V is no battery (bench, simulation)
-    clean = [(s, inside) for s in series if (inside := within(finite_numbers(s.rows), windows))]  # each signal's readings in the time checked, once
-    peaks = []
-    for s, inside in clean:
+    lowest = min(volts, key=lambda r: r[1]) if volts else None  # (time, volts)
+    low_t = lowest[0] if lowest else None
+    peaks = []  # (amps, signal, the peak row); a signal's readings are dropped once it is summarised, so a wide array never sits in memory all at once
+    then = []  # (amps, signal, signed amps) at the battery's low point
+    for s in series:
+        if not (inside := within(finite_numbers(s.rows), windows)):
+            continue
+        tag = s._replace(rows=[])
         peak = max(inside, key=lambda r: abs(float(r[1])))
-        peaks.append((abs(float(peak[1])), s, peak))
+        peaks.append((abs(float(peak[1])), tag, peak))
+        if low_t is not None and (v := value_at(inside, low_t)) is not None:
+            then.append((abs(float(v)), tag, float(v)))
     end_us = windows[-1][1] if windows else (volts[-1][0] if volts else 0)
     brownouts = [iv for rows in flags for iv in _intervals(rows, windows, end_us)]
     if not volts and not peaks and not brownouts:
         raise NothingToCompare("no battery voltage, current or brownout flag has a reading in the time checked")
     out: dict[str, Any] = {}
-    low_t = None
-    if volts:
-        low_t, low = min(volts, key=lambda r: r[1])
+    if lowest:
+        low_t, low = lowest
         under = sum(b[0] - a[0] for a, b in zip(volts, volts[1:], strict=False) if float(a[1]) < brownout_v and _together(windows, a[0], b[0])) / US_PER_S
         out["voltage"] = {"min_v": round(float(low), 2), "min_at_s": seconds_since(low_t, origin_us), "below_brownout_s": round(under, 1),
                           "brownout_v": brownout_v, "brownout_basis": basis}
@@ -157,7 +163,6 @@ def analyze_power(voltage: Sequence[Row], flags: Sequence[Sequence[Row]], series
     out["top_current"] = [entry(s, peak_a=round(a, 1), at_s=seconds_since(at[0], origin_us),
                                 battery_v_then=round(float(v), 2) if (v := value_at(volts, at[0])) is not None else None) for a, s, at in peaks[:MAX_LISTED]]
     if low_t is not None:
-        then = [(abs(float(v)), s, float(v)) for s, inside in clean if (v := value_at(inside, low_t)) is not None]
         then.sort(key=lambda p: -p[0])
         out["at_lowest_voltage"] = [entry(s, amps=round(a, 1)) for _, s, a in then[:MAX_AT_LOW]]
     out["labelled"] = bool(labels)
@@ -203,12 +208,12 @@ def run_power(plan: PowerPlan, rows: Mapping[str, Sequence[Row]], windows: Seque
     """The power reply. Raises NothingToCompare when no battery, current or brownout flag has a reading to check."""
     threshold = brownout_threshold(plan.threshold, rows[plan.threshold.name] if plan.threshold else (), brownout_v)
     battery = plan.battery.topics[0] if plan.battery.topics else None
-    series = [s for t in plan.sources.topics for s in expand(t, rows[t.name])]
+    series = (s for t in plan.sources.topics for s in expand(t, rows[t.name]))
     labels = parse_map(rows[plan.info["pdh"]]) if "pdh" in plan.info else {}
     out = analyze_power(rows[battery.name] if battery else (), [rows[t.name] for t in plan.browned.topics], series, threshold, windows, origin_us, labels)
     if battery:
         out["battery"] = {"topic": battery.name, "chosen_by": plan.battery.by, **({"others": plan.battery.others} if plan.battery.others else {})}
     out["currents"] = {"chosen_by": plan.sources.by, "topics": [t.name for t in plan.sources.topics]}
-    if any(s.channel is not None for s in series) and not labels:
+    if any("channel" in r for r in out["top_current"]) and not labels:
         out["hint"] = "channels are numbers: the robot can publish a PdhChannels map so they show device names (docs/ROBOT_INFO.md)"
     return out

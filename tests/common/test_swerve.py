@@ -79,9 +79,10 @@ def test_too_few_updates_are_nothing_to_compare():
         analyze(measured, command, [(0, S)], 0)
 
 
-def test_a_long_log_is_thinned_to_a_bounded_number_of_updates():
-    measured, command = feed(30_000, lambda n: [(1.9, 0.5)] * 4)
-    assert analyze(measured, command, [(0, 10**12)], 0)["modules"][0]["n"] <= 3100
+def test_every_update_counts_so_a_one_update_worst_moment_is_not_thinned_away():
+    measured, command = feed(30_000, lambda n: [(1.9 if n != 12_345 else 0.5, 0.5)] * 4)
+    out = analyze(measured, command, [(0, 10**12)], 0)
+    assert out["modules"][0]["n"] == 30_000 and out["worst_speed_err"]["mps"] == 1.5 and out["worst_speed_err"]["at_s"] == 246.9
 
 
 def test_the_lag_rule_needs_three_modules_a_big_error_and_twice_the_typical():
