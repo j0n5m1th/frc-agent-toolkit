@@ -11,7 +11,7 @@ Teach so the student could explain it to a teammate. If they only want the answe
 2. **Layer it.** One idea at a time: what it is, why it exists, how it shows up on the robot. Define each term once, with units.
 3. **Use their data.** Name the topic and time so they can find it in AdvantageScope themselves.
 4. **Show it.** Look at the data together and point at what matters, including why it happens.
-5. **Say how sure you are:** seen in data, from a document, or a guess. Two signals moving together are a clue, not a cause.
+5. **Say how sure you are:** a fact, an inference or a hypothesis (`frc-reasoning`).
 6. **Invite, don't quiz.** Share what is interesting and let them ask. Never lead them with questions.
 7. **Close** with a one-line recap, one thing to try, and one idea to explore next.
 

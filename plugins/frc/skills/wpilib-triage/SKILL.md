@@ -11,7 +11,7 @@ Goal: a one-page report. Tool details: `wpilib-log-analysis`.
 2. `wpilog_scan`. Its `flags` are the leads, ranked; note its `not_checked` and any `checked: false`. If it lists battery `candidates`, ask which topic is the battery and rescan with `battery=`.
 3. Big log or many leads: hand the digging to the `match-log-analyst` subagent and report its summary.
 4. Confirm each high flag with one narrow query: `wpilog_when` (how long; `also` and `sample` show what else was happening), or `wpilog_query` with `by_mode`, `peaks` or `buckets`. Use `align=auto` (not together with `by_mode`).
-5. Test a cause against a second signal before you name it. Correlation is not cause.
+5. Test a cause against a second signal before you name it. Load `frc-reasoning` before you write the report.
 
 Report, in plain words:
 - **What happened** (one line).
