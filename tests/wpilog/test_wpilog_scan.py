@@ -406,3 +406,15 @@ async def test_a_text_search_of_named_topics_that_are_missing_says_so(log_dir):
     await file_tools.wpilog_open("named.wpilog")
     out = text(await data_tools.wpilog_text(topics=["/No/Such"]))
     assert out["status"] == "no_match" and "named topics" in out["reason"]
+
+
+async def test_a_summary_says_how_the_signals_are_logged_and_says_it_once_when_they_agree(log_dir):
+    w = LogWriter()
+    one, two = (w.start(f"/Fake/Loop{n}", "double", "", BASE) for n in (1, 2))
+    for n in range(40):
+        w.append(one, float(n % 7), BASE + n * 20_000)
+        w.append(two, float(n % 5), BASE + n * 20_000)
+    w.save(log_dir / "sampling.wpilog")
+    await file_tools.wpilog_open("sampling.wpilog")
+    out = text(await data_tools.wpilog_query(topics=["/Fake/Loop1", "/Fake/Loop2"]))
+    assert out["all"]["sampling"] == "periodic" and "sampling" not in out["data"]["/Fake/Loop1"]

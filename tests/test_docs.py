@@ -104,7 +104,7 @@ def test_the_nt4_and_wpilog_guides_name_every_tool_of_their_server():
 
 
 def test_the_server_guides_keep_to_their_length():
-    for guide, low, high in (("NT4.md", 1100, 2000), ("WPILOG.md", 1350, 2400)):
+    for guide, low, high in (("NT4.md", 1100, 2000), ("WPILOG.md", 1350, 2500)):
         words = len((ROOT / "docs" / guide).read_text(encoding="utf-8").split())
         assert low <= words <= high, f"docs/{guide} has {words} words (allowed {low} to {high})"
 

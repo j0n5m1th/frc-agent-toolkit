@@ -136,6 +136,8 @@ Time zero is when the Driver Station started the log. Try: "When did the battery
 
 ## Limits
 
+A `summary` of a signal with at least 10 updates says how it is logged (`sampling`): `periodic` (every loop), `change_only` (only when the value changes, so a long gap is a hold, not missing data, and a mean counts updates, not seconds; use `reduce=time_weighted` for a mean over time) or `event`. It is judged from the first 5000 updates, and left out when the data has gaps or is out of order.
+
 A reply that is not a full answer carries a `status`: `no_match` (nothing was found, for example every topic name was wrong, or the log has no text topic) or `partial` (some topics failed). Finding nothing is not proof that nothing is wrong. A good reply has no `status`.
 
 Settings are in [SETTINGS](SETTINGS.md#every-other-setting) (`WPILOG_DIR`, `WPILOG_MAX_MB`, `WPILOG_TOOLSET`).

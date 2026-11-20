@@ -8,7 +8,7 @@ import math
 import statistics
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
-from itertools import chain
+from itertools import chain, pairwise
 from typing import Any
 
 from ..conditions import values_equal
@@ -35,6 +35,10 @@ STEP_MIN_SAMPLES = 4  # reduce=step_response needs at least this many connected 
 STEP_RISE_LOW, STEP_RISE_HIGH = 0.10, 0.90  # rise time runs from 10% to 90% of the way to the final value
 STEP_SETTLE_BAND = 0.02  # settled = staying within 2% of the step size around the final value
 STEP_TAIL_FRACTION = 0.10  # the final value is the mean of the last 10% of the samples
+
+SAMPLING_MIN_UPDATES = 10  # fewer updates than this are too few to tell how a signal is logged
+SAMPLING_MAX_UPDATES = 5000  # a longer signal is judged by its first updates, so a very long log costs no more than a short one
+SAMPLING_PERIODIC_SHARE = 0.8  # periodic: at least this share of the gaps within half a median gap of the median gap
 
 MAX_PEAKS = 5  # reduce=peaks lists at most this many highs and lows
 PEAK_SEPARATION_MS = 500.0  # two peaks closer than this are one event
@@ -125,6 +129,22 @@ def _nothing_finite(bad: int) -> dict[str, Any]:
     return {"note": "The values are so far apart that the result overflows a float."}
 
 
+def sampling_kind(rows: Sequence[MsRow]) -> str | None:
+    """How a signal is logged, judged from its first `SAMPLING_MAX_UPDATES` updates; None when there are too few to tell.
+
+    `periodic`: logged every loop. `change_only`: irregular gaps and never the same value twice in a row, so it is logged when the value
+    changes (a long gap is a hold, and a statistic over it counts updates, not seconds). `event`: anything else.
+    """
+    if len(rows) < SAMPLING_MIN_UPDATES:
+        return None
+    pairs = list(pairwise(rows[:SAMPLING_MAX_UPDATES]))
+    gaps = [b[0] - a[0] for a, b in pairs]
+    median = statistics.median(gaps)
+    if median > 0 and sum(abs(g - median) <= median / 2 for g in gaps) >= SAMPLING_PERIODIC_SHARE * len(gaps):
+        return "periodic"
+    return "event" if any(values_equal(a[1], b[1]) for a, b in pairs) else "change_only"
+
+
 def _summary(rows: list[MsRow], segments: list[Segment], shaper: Shaper, steady: bool) -> dict[str, Any]:
     """first/last plus min/max/mean (numeric) or change count (other); a never-changing topic collapses to `const`."""
     type_str, fields, precision = shaper.type_str, shaper.fields, shaper.precision
@@ -138,6 +158,8 @@ def _summary(rows: list[MsRow], segments: list[Segment], shaper: Shaper, steady:
     span = (used[-1][0] - used[0][0]) / MS_PER_S
     if span > 0 and steady:
         s["capture_rate_hz"] = round((len(used) - 1) / span, 1)
+        if kind := sampling_kind(used):
+            s["sampling"] = kind
     s["first"], s["last"] = shaper(used[0][1]), shaper(used[-1][1])
     if is_numeric(type_str):
         if skipped:

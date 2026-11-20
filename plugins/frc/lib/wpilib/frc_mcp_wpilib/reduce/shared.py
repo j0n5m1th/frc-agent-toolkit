@@ -2,7 +2,7 @@
 
 from typing import Any
 
-SHARED_KEYS = ("capture_rate_hz",)  # per-topic fields that move to the reply's `all` block when every topic agrees
+SHARED_KEYS = ("capture_rate_hz", "sampling")  # per-topic fields that move to the reply's `all` block when every topic agrees
 
 
 def hoist_shared(data: dict[str, Any], keys: tuple[str, ...] = SHARED_KEYS) -> dict[str, Any]:
