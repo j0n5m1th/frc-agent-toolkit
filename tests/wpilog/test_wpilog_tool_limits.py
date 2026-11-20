@@ -9,7 +9,7 @@ from test_wpilog_tools import call  # the shared call helper
 from frc_mcp_wpilog.tools import file_tools
 
 TOOLS = {"wpilog_list", "wpilog_open", "wpilog_close", "wpilog_topics", "wpilog_get_values", "wpilog_query",
-         "wpilog_when", "wpilog_text", "wpilog_diff", "wpilog_sync"}
+         "wpilog_when", "wpilog_text", "wpilog_scan", "wpilog_diff", "wpilog_sync"}
 
 
 

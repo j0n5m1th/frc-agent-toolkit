@@ -22,7 +22,7 @@ Needs a clone. Plugin only? Use the `uvx` form from [step 7](GETTING_STARTED.md#
 | `sim_output` | What the sim printed. `since` gives only new lines; `level` (`warn` or `error`) and `name_contains` filter. Repeated lines fold into one with a count like `(x30)`. Hidden by `SIM_TOOLSET=core`. |
 | `sim_stop` | Stops the sim and everything it started. |
 
-States: `idle`, `building`, `starting`, `ready`, `exited`, `stopped`, `timed_out`.
+States: `idle`, `building`, `starting`, `ready`, `exited`, `stopped`, `timed_out`. After `sim_stop` (or the `run_s` limit) a non-zero `exit_code` is normal: the reply says `exit_expected`, and error lines printed while it was being stopped are not counted in `errors`.
 
 `sim_start` takes `props`, which become Gradle options: `{"mode": "teleop"}` runs `-Pmode=teleop`. What each option means is up to your project's `build.gradle`. If your robot logs with WPILib's data log, `sim_status` also shows `wpilog`, the file this run wrote.
 

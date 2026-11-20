@@ -102,6 +102,10 @@ class Session:
             out["wpilog"] = run.console.datalog  # the log server opens it (set WPILOG_DIR to its folder)
         if run.exit_code is not None:
             out["exit_code"] = run.exit_code
+            if run.console.errors_at_end:
+                out["errors_at_stop"] = run.console.errors_at_end  # error lines printed while it was being stopped: shutdown noise, or a crash still printing
+            if run.end_reason in ("stopped", "timed_out") and run.exit_code != 0:
+                out["exit_expected"] = f"the process was ended by {'sim_stop' if run.end_reason == 'stopped' else 'the run_s / SIM_MAX_RUN_S limit'}, so a non-zero code is normal"
         if run.console.dropped:
             out["dropped_lines"] = run.console.dropped
         out["nt_port_open"] = port_is_open

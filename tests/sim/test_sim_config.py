@@ -135,3 +135,10 @@ def test_the_status_default_never_raises_and_does_not_guess_without_a_project(tm
     assert config.status_default_task(tmp_path) == "run"
     monkeypatch.setenv("SIM_TASK", "simulateJava")  # refused for a 2027 project: report it, do not raise
     assert "refused for this project" in config.status_default_task(tmp_path)
+
+
+def test_console_search_takes_either_of_two_words():
+    console = Console()
+    for text in ("robot starting", "ERROR: bad", "Exception in thread", "done"):
+        console.add(text)
+    assert [line.text for line in console.select(contains="error|exception")] == ["ERROR: bad", "Exception in thread"]

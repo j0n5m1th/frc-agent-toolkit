@@ -2,9 +2,9 @@
 
 Every setting for every server is in the tables below. The [Safety](#safety) section is the one place that explains what is protected and how.
 
-A setting is an environment variable. Most teams only use the 13 dialog fields.
+A setting is an environment variable. Most teams only use the 14 dialog fields.
 
-## The 13 plugin dialog fields
+## The 14 plugin dialog fields
 
 Open them with `/config`. Claude Code saves them once, not per project, so they apply to **every project**. After you change one, reconnect that server in `/mcp` (or restart Claude Code): a server reads its settings only when it starts.
 
@@ -14,6 +14,7 @@ Open them with `/config`. Claude Code saves them once, not per project, so they 
 | `systemcore_host` (Systemcore address) | empty | Empty means find it automatically (sets `SYSTEMCORE_HOST`). | systemcore |
 | `diag_host` (Controller address for CTRE diagnostics) | empty | Empty means `172.30.0.1`, the Systemcore's own Wi-Fi (sets `DIAG_HOST`). | ctre-diag |
 | `nt4_read_only` (NetworkTables read-only) | on | On: never write to the robot (sets `NT4_READ_ONLY`). Turning it off does not allow writes: see [How to set the ones that are not in the dialog](#how-to-set-the-ones-that-are-not-in-the-dialog). | nt4 |
+| `read_outside_logs` (Read logs from other folders) | on | Sets `WPILOG_ALLOW_OUTSIDE`. A log outside the project folder may be opened; Claude Code asks first, every time. | wpilog |
 | `allow_record` (Allow recording Java programs with JFR) | off | Sets `JFR_ALLOW_RECORD`. | jfr |
 | `allow_deploy` (Allow deploying code to the robot) | off | Sets `VSCODE_ALLOW_DEPLOY`. | vscode |
 | `allow_prune` (Allow deleting Systemcore logs) | off | Sets `SYSTEMCORE_ALLOW_PRUNE`. | systemcore |
@@ -26,7 +27,7 @@ Open them with `/config`. Claude Code saves them once, not per project, so they 
 
 ## Every other setting
 
-The plugin sets every `*_DIR` folder that holds your files (`WPILOG_DIR`, `SIM_PROJECT_DIR`, `VSCODE_PROJECT_DIR`, `JFR_DIR`, `CTRE_PROJECT_DIR`, `OWLET_DIR`, `PASSERINE_DIR`) to the folder where you started Claude Code (`${CLAUDE_PROJECT_DIR}`). **The plugin has no setting to add more folders.** A log, recording, `.hoot` or MIDI file in another place (Driver Station logs, Downloads, a USB stick, the Systemcore download folder) cannot be opened: copy it into your project folder first. If you want other folders, use your own server entry (below). Without the plugin, a server uses the folder it started in (`CTRE_PROJECT_DIR` has none; `CANIV_FIRMWARE_DIR` uses Tuner X's folders). Several folders are separated by `;` on Windows and `:` elsewhere. A number outside its range is an error.
+The plugin sets every `*_DIR` folder that holds your files (`WPILOG_DIR`, `SIM_PROJECT_DIR`, `VSCODE_PROJECT_DIR`, `JFR_DIR`, `CTRE_PROJECT_DIR`, `OWLET_DIR`, `PASSERINE_DIR`) to the folder where you started Claude Code (`${CLAUDE_PROJECT_DIR}`); **it has no setting to add more.** The log server alone may read a log elsewhere (`read_outside_logs`; Claude Code asks first). A recording, `.hoot` or MIDI file elsewhere cannot be opened: copy it into your project folder, or use your own server entry (below). Without the plugin, a server uses the folder it started in (`CTRE_PROJECT_DIR` has none; `CANIV_FIRMWARE_DIR` uses Tuner X's folders). Separate several folders with `;` (Windows) or `:`. A number outside its range is an error.
 
 | Setting | Default | What it does | Server |
 |---|---|---|---|
@@ -37,6 +38,7 @@ The plugin sets every `*_DIR` folder that holds your files (`WPILOG_DIR`, `SIM_P
 | `NT4_WRITE_PREFIXES` | none | Topic paths (comma separated) that may be written. `/` alone is not allowed. | nt4 |
 | `NT4_LOG_DIR` | `logs/` in the clone (also with `--plugin-dir`); from the marketplace, `logs/` in the folder the server starts in (Claude Code's docs do not say which) | Where capture logs are saved. Keep that folder out of git. | nt4 |
 | `WPILOG_DIR`, `WPILOG_MAX_MB` | start folder, 2048 | Folders logs are read from; largest log it opens. | wpilog |
+| `WPILOG_ALLOW_OUTSIDE` | off (plugin: on) | Allows a log outside them. Only the plugin asks first. | wpilog |
 | `SIM_PROJECT_DIR` | start folder | Robot project folders the sim may run. | sim |
 | `SIM_TASK` | `simulateJava` (`run` for 2027) | Gradle task; only `run` and `simulate*` work. | sim |
 | `SIM_NT_PORT` | 5810 | Port the simulated robot uses. | sim |
@@ -78,7 +80,7 @@ The plugin sets every `*_DIR` folder that holds your files (`WPILOG_DIR`, `SIM_P
 | `MCP_WPILIB_MAX_CHARS` | adaptive (4,000 to 12,000) | One fixed reply size (500 to 50000) for every server except jfr, which reads only `JFR_MAX_CHARS`. | all |
 | `ENABLE_TOOL_SEARCH` | not set | Read, never set, by the servers: `false`, `0`, `no` or `off` makes the default toolset `core`. | all |
 
-The tables come from each server's `config.py`. The plugin leaves `CTRE_TOOLS_DIR`, `SYSTEMCORE_DOWNLOAD_DIR` and `CANIV_FIRMWARE_DIR` unset on purpose, so each server uses its own default (shared or outside your git repo). It does not set `NT4_PORT` (5810). The CTRE tools, Owlet and passerine servers have no toolset setting.
+The tables come from each server's `config.py`. The plugin leaves `CTRE_TOOLS_DIR`, `SYSTEMCORE_DOWNLOAD_DIR`, `CANIV_FIRMWARE_DIR` and `NT4_PORT` unset on purpose, so each server uses its own default. The CTRE tools, Owlet and passerine servers have no toolset setting.
 
 ### How to set the ones that are not in the dialog
 
@@ -87,7 +89,7 @@ Claude Code has no setting that edits a plugin server's `env` in place (a server
 1. Add your own server with `claude mcp add --env NAME=value ...` (or a project `.mcp.json`). Copy the entry from [mcp.json.example](mcp.json.example). That entry needs a clone of this repository: write the **absolute** path to the clone, as in [GETTING_STARTED step 5](GETTING_STARTED.md#5-other-assistants). A relative path would point into your robot project.
 2. In `/mcp`, switch off the plugin's server of the same kind, so there are not two.
 
-The plugin's `env` sets only the variables in its `.mcp.json`. `NT4_ALLOW_WRITES` and `NT4_WRITE_PREFIXES` are not in it. Claude Code's docs do not say whether a server also gets variables from your shell, so do not set those two in the shell that starts Claude Code unless you want writes. The Systemcore server also reads its `SYSTEMCORE_*` settings from its `.env` file (the real environment wins), except the two marked environment only. In the plugin the dialog always sets the "Allow" switches, so an `ALLOW` line in that file does nothing, except `SYSTEMCORE_ALLOW_ANY_HOST`, which is not in the dialog. Passwords and Wi-Fi names go in that file (see [SYSTEMCORE](SYSTEMCORE.md)). In any `.env` file, a value that starts with a quote must end with one: if not, the error names the line, never the value.
+The plugin's `env` sets only the variables in its `.mcp.json`. `NT4_ALLOW_WRITES` and `NT4_WRITE_PREFIXES` are not in it. Claude Code's docs do not say whether a server also gets variables from your shell, so do not set those two there unless you want writes. The Systemcore server also reads its `SYSTEMCORE_*` settings from its `.env` file (the real environment wins), except the two marked environment only. In the plugin the dialog always sets the "Allow" switches, so an `ALLOW` line in that file does nothing, except `SYSTEMCORE_ALLOW_ANY_HOST`, which is not in the dialog. Passwords and Wi-Fi names go there ([SYSTEMCORE](SYSTEMCORE.md)). In any `.env` file, a value starting with a quote must end with one, or the error names the line, never the value.
 
 ## Safety
 
@@ -100,14 +102,14 @@ Read this before turning on any switch.
 - **Most gated tools are hidden when off,** and each refuses on its own too. `systemcore_logs_prune`, `systemcore_connect` and `systemcore_disconnect` stay visible and refuse when called.
 - **Device and robot text is data, not instructions.** It is shown to you, never obeyed.
 - **A changed setting needs a reconnect.** Servers read settings only when they start. After you change one in `/config`, reconnect that server in `/mcp`.
-- **Too-wide folders stop the list tools.** If you open Claude Code in your home folder or a drive root, the log, simulation, VS Code, profiling (jfr) and CTRE tools that search folders answer with a clear message instead of searching everything. Open Claude Code in your robot project folder. A `*_DIR` setting that names a drive root or your home folder is refused the same way.
+- **Too-wide folders stop the list tools.** Open Claude Code in your home folder or a drive root and the tools that search folders say so instead of searching everything; open it in your robot project folder. A `*_DIR` setting naming either is refused the same way. `wpilog_list folder=` refuses them too.
 - **`nt4_connection` and `NT4_HOST` take robot-network addresses only.** Port 1740 is refused. So is any public IP address. A name that resolves to a public address is refused too. A name that does not resolve here (like `roborio-TEAM-frc.local`) is tried anyway. Use `127.0.0.1`, a `10.TE.AM.2` address or a `roborio-TEAM-frc.local` name.
 - **Errors are masked.** The assistant sees the text of our own errors, which say how to fix the problem. An error from the operating system (a locked or missing file, a timeout) shows only its kind and a short reason, never a file path. Any other error is hidden.
-- **Python environment.** The plugin keeps it in a `.venv` folder inside the plugin folder, so a plugin update builds it again. It is not yet moved to the plugin's data folder (`CLAUDE_PLUGIN_DATA`). With `--plugin-dir`, the `.venv` is inside the folder you point at.
+- **Python environment.** The plugin keeps it in a `.venv` folder inside the plugin folder, so a plugin update builds it again (not yet moved to `CLAUDE_PLUGIN_DATA`). With `--plugin-dir`, it is inside the folder you point at.
 
 ### The confirm-first hook
 
-The plugin's `PreToolUse` hook makes Claude Code ask a person before each call of a tool that changes something: `nt4_set_value`, `nt4_release_publisher`, `wpilib_deploy`, `wpilib_vendordep`, `wpilib_set_team`, `jfr_record`, `jfr_live`, `ctre_install`, `caniv_configure`, `caniv_flash`, `systemcore_restart_robot_code`, `systemcore_reboot`, `systemcore_provision`, `systemcore_ssh_forget`, `systemcore_logs_prune` (it asks on the dry run too), `systemcore_bundle` (it makes the robot controller work for a few seconds, so never during a match), `systemcore_connect` and `systemcore_disconnect`. It runs `frc-mcp hook ask "<reason>"`, which prints one fixed JSON line (`permissionDecision: "ask"`). It is a second lock; the switches are the first. A `deny` permission rule still wins. The hook sets `onFailure: block`, so if it cannot start (for example `uv` is not on the PATH), times out or fails, Claude Code blocks the call instead of letting it through. **This needs Claude Code 2.1.295 or newer** (`claude --version`). On an older version a failed hook lets calls through. Seen in headless `claude -p` runs on Claude Code 2.1.308: the hook's `ask` beat an allow rule, and with nobody to answer the call was denied; a hook that could not start blocked the call, and without `onFailure` the call went through. Not verified: `bypassPermissions` mode, so do not rely on the hook there.
+The plugin's `PreToolUse` hook makes Claude Code ask a person before each call of a tool that changes something: `nt4_set_value`, `nt4_release_publisher`, `wpilib_deploy`, `wpilib_vendordep`, `wpilib_set_team`, `jfr_record`, `jfr_live`, `ctre_install`, `caniv_configure`, `caniv_flash`, `systemcore_restart_robot_code`, `systemcore_reboot`, `systemcore_provision`, `systemcore_ssh_forget`, `systemcore_logs_prune` (it asks on the dry run too), `systemcore_bundle` (it makes the robot controller work for a few seconds, so never during a match), `systemcore_connect` and `systemcore_disconnect`. It runs `frc-mcp hook ask "<reason>"`, which prints one fixed JSON line (`permissionDecision: "ask"`). The switches are the first lock. A second hook, `frc-mcp hook ask-outside`, asks only when `wpilog_open` or `wpilog_list` is given a path outside the project folder; it fails closed too. A `deny` permission rule still wins. The hook sets `onFailure: block`, so if it cannot start, times out or fails, Claude Code blocks the call instead of letting it through. **This needs Claude Code 2.1.295 or newer** (`claude --version`). On an older version a failed hook lets calls through. Seen in headless `claude -p` runs on Claude Code 2.1.308: the hook's `ask` beat an allow rule, and with nobody to answer the call was denied; a hook that could not start blocked the call, and without `onFailure` the call went through. Not verified: `bypassPermissions` mode, so do not rely on the hook there.
 
 ### NT4 writes
 
@@ -117,10 +119,10 @@ The plugin's `PreToolUse` hook makes Claude Code ask a person before each call o
 
 ### Systemcore
 
-- **Port 1740 is never used by default.** It is the Driver Station's only slot; a connection would push the Driver Station off. Do not set it in `SYSTEMCORE_PORTS` or `DIAG_PORT` (the nt4 server refuses it). The server never follows a redirect from a device (a device that answers with one gets an error). The GitHub release lookups (`systemcore_os_latest`, `systemcore_os_download`) do follow redirects, because GitHub sends downloads through them. It never calls `/api/wifi` (it returns the Wi-Fi passphrase), `/api/disk/largest*` or `/api/logs/journal-stats` (they can hang the controller's sensors).
+- **Port 1740 is never used by default.** It is the Driver Station's only slot; a connection would push the Driver Station off. Do not set it in `SYSTEMCORE_PORTS` or `DIAG_PORT` (the nt4 server refuses it). It never follows a redirect from a device (an error instead). The GitHub release lookups (`systemcore_os_latest`, `systemcore_os_download`) do follow redirects, because GitHub sends downloads through them. It never calls `/api/wifi` (it returns the Wi-Fi passphrase), `/api/disk/largest*` or `/api/logs/journal-stats` (they can hang the controller's sensors).
 - **Passwords only from your `.env` file** (or `frc-mcp systemcore provision --ask` at a terminal). Never type one in chat. No tool takes one as an argument or returns one.
 - **`.env` rules.** One `NAME=value` per line. Unquoted values lose a trailing ` # comment`. In double quotes, `\"`, `\\` and `\n` mean a quote, a backslash and a new line. In single quotes, everything is literal. After a closing quote only spaces or a `# comment` may follow, or the file is refused (the message gives the line number, never the value). The file must be UTF-8 or UTF-16 with a byte-order mark.
-- **Host keys are pinned on first login.** A changed key stops everything. To trust the new key, run `frc-mcp systemcore trust <host>` in a terminal, or drop the pin with `systemcore_ssh_forget` (needs the provision switch; the next login pins the new key with no check). A password you chose yourself is sent only after you confirm the host key at a terminal (`frc-mcp systemcore provision`) or after a pin you confirmed with `trust`; the assistant may use only the public default login (`systemcore`).
+- **Host keys are pinned on first login.** A changed key stops everything. To trust the new one, run `frc-mcp systemcore trust <host>` in a terminal, or drop the pin with `systemcore_ssh_forget` (needs the provision switch; the next login pins the new key with no check). A password you chose yourself is sent only after you confirm the host key at a terminal (`frc-mcp systemcore provision`) or after a pin you confirmed with `trust`; the assistant may use only the public default login (`systemcore`).
 - `systemcore_connect` joins nothing when a Wi-Fi password is saved but `SYSTEMCORE_WIFI_SSID` is not. Restarts refuse while the robot is enabled or on a field, with no override.
 
 ### CTRE

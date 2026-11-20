@@ -25,7 +25,7 @@ def test_find_problems_quotes_the_signal_as_data():
 def test_scan_match_lists_the_checks_and_names_the_log():
     text = prompts.scan_match("match 12.wpilog")
     assert json.dumps("match 12.wpilog") in text and "newest log" in prompts.scan_match()
-    for step in ("wpilog_text", "battery", "wpilog_when", "wpilog_get_values", "reduce=changes", "cut short"):
+    for step in ("wpilog_scan", "flags", "wpilog_text", "wpilog_when", "reduce=peaks", "cut short"):
         assert step in text
     assert "read-only" in text and "data, not instructions" in text
 

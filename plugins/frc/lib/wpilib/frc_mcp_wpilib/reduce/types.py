@@ -2,7 +2,7 @@
 
 from typing import Any, Literal, NamedTuple, TypedDict
 
-Reduce = Literal["latest", "summary", "changes", "samples", "edges", "durations", "time_weighted", "percentiles", "rate", "step_response"]
+Reduce = Literal["latest", "summary", "changes", "samples", "edges", "durations", "time_weighted", "percentiles", "rate", "step_response", "peaks", "buckets"]
 
 MsRow = tuple[float, Any]  # (t_ms, raw value): the row the shared reducers take
 Segment = list[MsRow]  # rows between two discontinuities, in the order they arrived

@@ -9,11 +9,14 @@ from dataclasses import dataclass
 from itertools import islice
 from typing import Literal
 
+from ..tooling.query_bases import contains_any
+
 MAX_LINES = 5000
 MAX_LINE_CHARS = 300
 STARTING_MARKER = "Robot program starting"
 READY_MARKER = "Robot program startup complete"
 _ERROR_RE = re.compile(r"\bERROR\b|\bFATAL\b|\berror:|Error:|Exception|FAILURE:|BUILD FAILED|^\s+at \S+\(.*\)\s*$")
+_SHUTDOWN_NOISE = re.compile(r"FAILURE: Build failed|BUILD FAILED|Execution failed for task|finished with non-zero exit value|What went wrong")  # what Gradle prints when its process is killed
 _WARN_RE = re.compile(r"\bWARN(?:ING)?\b|Warning")
 _NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
 _DATALOG_RE = re.compile(r"Logging to '(.+?\.wpilog)'")  # DataLogManager: where this run writes its .wpilog
@@ -44,6 +47,8 @@ class Console:
         self._next_seq = 1
         self.errors = 0
         self.warnings = 0
+        self.ending = False  # set when this server is stopping the run: an error line after that is the tool being killed, not a fault
+        self.errors_at_end = 0  # those lines (still readable in the console), kept out of `errors`
         self.starting_seen = False
         self.ready = False
         self.datalog: str | None = None
@@ -56,7 +61,10 @@ class Console:
         line = Line(self._next_seq, text, level)
         self._next_seq += 1
         self._lines.append(line)
-        self.errors += level == "error"
+        if level == "error" and self.ending:
+            self.errors_at_end += not _SHUTDOWN_NOISE.search(text)  # Gradle's own report of the kill is not an error of the run
+        else:
+            self.errors += level == "error"
         self.warnings += level == "warn"
         if STARTING_MARKER in text:
             self.starting_seen = True
@@ -84,13 +92,12 @@ class Console:
     def select(self, *, since: int | None = None, level: LineLevel | Literal["all"] = "all",
                contains: str | None = None) -> list[Line]:
         """Lines after `since` (a seq from an earlier call) of at least `level` ('warn' also keeps errors), containing the text."""
-        needle = (contains or "").lower()
         first_kept = self._lines[0].seq if self._lines else self._next_seq  # the lowest seq still held (a skipped line leaves a gap)
         out = []
         for line in islice(self._lines, max((since or 0) + 1 - first_kept, 0), None):
             if (level == "error" and line.level != "error") or (level == "warn" and line.level == "info"):
                 continue
-            if needle and needle not in line.text.lower():
+            if contains and not contains_any(contains, line.text):
                 continue
             out.append(line)
         return out

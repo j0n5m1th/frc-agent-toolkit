@@ -43,6 +43,12 @@
       "description": "On: never write to the robot. Applies to every project. Off alone does not allow writes: see docs/SETTINGS.md.",
       "default": true
     },
+    "read_outside_logs": {
+      "type": "boolean",
+      "title": "Read logs from other folders",
+      "description": "On: the assistant may open a .wpilog or Driver Station log, or list a folder of them, outside the project folder (for example a USB stick). Claude Code asks you first, each time. Reading only, and only log files.",
+      "default": true
+    },
     "allow_record": {
       "type": "boolean",
       "title": "Allow recording Java programs with JFR",

@@ -12,14 +12,15 @@ from frc_mcp_jfr.config import RECORD
 from frc_mcp_nt4.config import read_only
 from frc_mcp_systemcore.config import provision, prune, restart, wifi
 from frc_mcp_vscode.config import deploy
+from frc_mcp_wpilog.config import OUTSIDE
 
 PLUGIN = Path(__file__).resolve().parent.parent / "plugins" / "frc"
-SWITCHES = [INSTALL, ALLOW_CONFIG, ALLOW_FLASH, RECORD, read_only, prune, provision, restart, wifi, deploy]
+SWITCHES = [INSTALL, ALLOW_CONFIG, ALLOW_FLASH, RECORD, read_only, prune, provision, restart, wifi, deploy, OUTSIDE]
 
 
 def test_the_list_covers_every_switch_the_plugin_sets():
     servers = json.loads((PLUGIN / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]
-    names = {name for server in servers.values() for name, value in server["env"].items() if "user_config.allow_" in value or name == "NT4_READ_ONLY"}
+    names = {name for server in servers.values() for name, value in server["env"].items() if "user_config.allow_" in value or name in ("NT4_READ_ONLY", "WPILOG_ALLOW_OUTSIDE")}
     assert names == {switch.env_name for switch in SWITCHES}
 
 

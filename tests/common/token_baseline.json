@@ -2,29 +2,29 @@
  "nt4": {
   "full": {
    "gates-off": {
-    "tools": 11,
-    "names": 121,
-    "defs": 3185,
+    "tools": 12,
+    "names": 131,
+    "defs": 3265,
     "instructions": 48
    },
    "gates-on": {
-    "tools": 13,
-    "names": 145,
-    "defs": 3605,
+    "tools": 14,
+    "names": 155,
+    "defs": 3685,
     "instructions": 48
    }
   },
   "core": {
    "gates-off": {
-    "tools": 8,
-    "names": 85,
-    "defs": 1956,
+    "tools": 9,
+    "names": 95,
+    "defs": 2032,
     "instructions": 36
    },
    "gates-on": {
-    "tools": 8,
-    "names": 85,
-    "defs": 1956,
+    "tools": 9,
+    "names": 95,
+    "defs": 2032,
     "instructions": 36
    }
   }
@@ -32,30 +32,30 @@
  "wpilog": {
   "full": {
    "gates-off": {
-    "tools": 10,
-    "names": 113,
-    "defs": 2392,
-    "instructions": 53
+    "tools": 11,
+    "names": 124,
+    "defs": 2574,
+    "instructions": 62
    },
    "gates-on": {
-    "tools": 10,
-    "names": 113,
-    "defs": 2392,
-    "instructions": 53
+    "tools": 11,
+    "names": 124,
+    "defs": 2574,
+    "instructions": 62
    }
   },
   "core": {
    "gates-off": {
-    "tools": 7,
-    "names": 80,
-    "defs": 1930,
-    "instructions": 45
+    "tools": 8,
+    "names": 91,
+    "defs": 2109,
+    "instructions": 54
    },
    "gates-on": {
-    "tools": 7,
-    "names": 80,
-    "defs": 1930,
-    "instructions": 45
+    "tools": 8,
+    "names": 91,
+    "defs": 2109,
+    "instructions": 54
    }
   }
  },
@@ -64,13 +64,13 @@
    "gates-off": {
     "tools": 4,
     "names": 40,
-    "defs": 414,
+    "defs": 417,
     "instructions": 56
    },
    "gates-on": {
     "tools": 4,
     "names": 40,
-    "defs": 414,
+    "defs": 417,
     "instructions": 56
    }
   },
@@ -94,13 +94,13 @@
    "gates-off": {
     "tools": 5,
     "names": 57,
-    "defs": 572,
+    "defs": 575,
     "instructions": 47
    },
    "gates-on": {
     "tools": 6,
     "names": 69,
-    "defs": 732,
+    "defs": 735,
     "instructions": 47
    }
   },
@@ -108,13 +108,13 @@
    "gates-off": {
     "tools": 2,
     "names": 22,
-    "defs": 243,
+    "defs": 246,
     "instructions": 47
    },
    "gates-on": {
     "tools": 3,
     "names": 34,
-    "defs": 403,
+    "defs": 406,
     "instructions": 47
    }
   }

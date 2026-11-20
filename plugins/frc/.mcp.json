@@ -32,7 +32,8 @@
         "wpilog"
       ],
       "env": {
-        "WPILOG_DIR": "${CLAUDE_PROJECT_DIR}"
+        "WPILOG_DIR": "${CLAUDE_PROJECT_DIR}",
+        "WPILOG_ALLOW_OUTSIDE": "${user_config.read_outside_logs}"
       }
     },
     "sim": {

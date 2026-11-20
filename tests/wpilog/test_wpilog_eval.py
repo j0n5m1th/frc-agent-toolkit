@@ -13,6 +13,7 @@ import runner_support
 from frc_mcp_wpilog import queries, timeline
 from frc_mcp_wpilog.logfile import LogFile
 from frc_mcp_wpilog.queries import QuerySpec, Range
+from frc_mcp_wpilog.scan_queries import scan
 
 EVAL = Path(__file__).resolve().parents[2] / "evaluations" / "wpilog_eval.xml"
 
@@ -32,6 +33,10 @@ def expected_answers(log):
     speed = queries.query(log, ["/Fake/Drive/Speeds"], QuerySpec(reduce="summary", fields=["vx"]), Range("auto", 0, auto_ms))
     pose = queries.values_at(log, ["/Fake/Drive/Pose"], 10000, ["translation.x"], "auto")
     error = queries.search_text(log, None, "error", Range(), 5)["items"][0]
+    sampled = queries.when(log, "/Fake/Elevator/Current", ">", 40, None, Range("auto", 0, auto_ms), 20, (), ["/Fake/Arm/Angle"])
+    by_mode = queries.by_mode(log, ["/Fake/Drive/Speeds"], QuerySpec(reduce="summary", fields=["vx"]))["modes"]
+    peak = {m: by_mode[m]["data"]["/Fake/Drive/Speeds"]["fields"]["vx"]["max"] for m in ("auto", "teleop")}
+    found = scan(log)["messages"]
     return [
         str(round(log.duration_s)),
         str(spikes["n"]),
@@ -41,6 +46,9 @@ def expected_answers(log):
         str(round(speed["data"]["/Fake/Drive/Speeds"]["fields"]["vx"]["max"])),
         str(round((teleop.end_us - teleop.start_us) / 1e6)),
         str(round(pose["/Fake/Drive/Pose"]["v"]["translation.x"])),
+        str(round(sampled["sampled"]["/Fake/Arm/Angle"][0])),
+        str(round(peak["auto"] / peak["teleop"])),
+        str(found["errors"] + found["warnings"]),
     ]
 
 
@@ -52,7 +60,7 @@ def test_every_expected_answer_in_the_xml_matches_the_practice_log(practice):
 
 def test_the_runner_parses_the_evaluation_file():
     pairs = runner.parse_eval_pairs(EVAL.read_bytes())
-    assert len(pairs) == 8 and all(question and answer for question, answer in pairs)
+    assert len(pairs) == 11 and all(question and answer for question, answer in pairs)
 
 
 def run(monkeypatch, *argv):

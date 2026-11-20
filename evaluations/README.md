@@ -103,6 +103,8 @@ python <mcp-builder>/scripts/evaluation.py evaluations/last_sim_eval.xml -t stdi
 uv run --project plugins/frc python evaluations/run_with_claude_code.py --practice-log
 ```
 
+Questions 9 to 11 cover `sample`, `by_mode` with `peaks`, and `wpilog_scan`: 3 of 3 correct in one run (2026-11-19, `claude-sonnet-5-5`, $0.078, 10 tool calls; the model asked for timestamps beside `sampled` values and a note that `scan` counts are complete). The first 8 were not rerun.
+
 `tests/wpilog/test_wpilog_eval.py` recomputes every expected answer from the log, so the XML cannot drift from `fake_log.py`. `benchmark_wpilog.py` is the model-free payload benchmark for the same log (see [Benchmarks](#benchmarks)).
 
 ## Benchmarks
@@ -187,6 +189,8 @@ Checked 2026-11-14 at commit `8d23502` (in the earlier private repository, not i
 | `CEILING_CHARS` | 12000 |
 
 Decision (2026-11-14, kept at 12000): every benchmark reply is far below the ceiling, but the fake robot and practice log are tiny, so this says nothing about big real topic lists or match logs. A lower ceiling (8000 would pass every scenario here) would page earlier on real data without evidence that it helps. Re-check with a real match log before lowering it.
+
+Re-checked 2026-11-19 on a larger made-up log (`make` script not kept in the tree): 570 topics (11 subsystems of 50 signals, AdvantageKit-style names), 150 s, 21 MB, 4 million updates, 200 warning lines. Longest reply: `wpilog_query` summary of 50 topics, 5,637 characters (about 110 characters per topic); topic listings 2,552 characters or less; nothing was truncated. **Decision: keep 12000.** It is still synthetic (random signals, no real robot); re-check with a real AdvantageKit match log before changing it.
 
 ### End-to-end with a model (real token usage)
 

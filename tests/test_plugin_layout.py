@@ -33,7 +33,7 @@ def test_every_entry_runs_frc_mcp_from_the_plugin_folder_with_all_five_flags():
 
 
 DIALOG_FIELDS = {"nt4_host", "systemcore_host", "diag_host", "nt4_read_only", "allow_record", "allow_deploy", "allow_prune", "allow_provision",
-                 "allow_wifi_join", "allow_restart", "allow_ctre_install", "allow_caniv_config", "allow_caniv_flash"}
+                 "allow_wifi_join", "allow_restart", "allow_ctre_install", "allow_caniv_config", "allow_caniv_flash", "read_outside_logs"}
 PROJECT = "${CLAUDE_PROJECT_DIR}"
 FOLDER_SETTINGS = {"WPILOG_DIR", "SIM_PROJECT_DIR", "VSCODE_PROJECT_DIR", "JFR_DIR", "CTRE_PROJECT_DIR", "OWLET_DIR", "PASSERINE_DIR"}
 UNSET_ON_PURPOSE = {"CTRE_TOOLS_DIR", "SYSTEMCORE_DOWNLOAD_DIR", "CANIV_FIRMWARE_DIR", "NT4_PORT"}  # the server's own default is better than the project folder
@@ -51,9 +51,9 @@ def test_every_entry_matches_its_entry_point_and_setting_placeholders_are_real_s
             assert value == PROJECT or (re.fullmatch(r"\$\{user_config\.(\w+)\}", value) and value[len("${user_config."):-1] in fields), (key, name, value)
 
 
-def test_the_dialog_has_exactly_the_thirteen_fields_and_every_field_is_used():
+def test_the_dialog_has_exactly_the_fourteen_fields_and_every_field_is_used():
     fields = user_config()
-    assert set(fields) == DIALOG_FIELDS and len(fields) == 13
+    assert set(fields) == DIALOG_FIELDS and len(fields) == 14
     used = {value[len("${user_config."):-1] for server in mcp_servers().values() for value in server["env"].values() if value != PROJECT}
     assert used == DIALOG_FIELDS
 
@@ -69,6 +69,7 @@ def test_every_allow_switch_is_a_boolean_that_starts_off_and_is_titled_allow():
             assert field["default"] is False and field["title"].startswith("Allow "), name
             assert "every project" in field["description"], name  # these values are saved per user, not per project
     assert fields["nt4_read_only"]["default"] is True and fields["nt4_read_only"]["type"] == "boolean"
+    assert fields["read_outside_logs"]["default"] is True  # on, because Claude Code asks before every such read (hooks.json); an allow_ switch would start off
     assert fields["nt4_host"]["default"] == "127.0.0.1" and fields["systemcore_host"]["default"] == "" and fields["diag_host"]["default"] == ""
 
 
@@ -115,7 +116,7 @@ def test_the_repo_does_not_load_the_plugin_servers_as_project_servers():
     assert not settings.exists() or "mcpServers" not in settings.read_text(encoding="utf-8")
 
 
-SKILL_NAMES = {"frc-start-here", "systemcore", "systemcore-live", "systemcore-restart", "systemcore-provision", "ctre-diagnose", "ctre-convert", "ctre-canivore",
+SKILL_NAMES = {"frc-explain", "wpilib-prematch", "wpilib-triage", "wpilib-tune", "frc-start-here", "systemcore", "systemcore-live", "systemcore-restart", "systemcore-provision", "ctre-diagnose", "ctre-convert", "ctre-canivore",
                "wpilib-build", "wpilib-deploy", "wpilib-project", "wpilib-live", "wpilib-log-analysis", "wpilib-profile"}
 GATED = {"systemcore-restart", "systemcore-provision", "ctre-canivore", "wpilib-deploy"}  # side effects: the model may not start these alone
 
@@ -125,8 +126,8 @@ def frontmatter(skill: Path) -> dict[str, str]:
     return dict(line.split(": ", 1) for line in block.splitlines())
 
 
-def test_the_plugin_has_exactly_these_fourteen_skills():
-    assert {skill.name for skill in SKILLS} == SKILL_NAMES and len(SKILLS) == 14
+def test_the_plugin_has_exactly_these_eighteen_skills():
+    assert {skill.name for skill in SKILLS} == SKILL_NAMES and len(SKILLS) == 18
 
 
 def test_exactly_the_four_side_effect_skills_are_hidden_from_the_model():
@@ -157,6 +158,9 @@ def test_skills_name_only_real_server_keys():
         for prefix in re.findall(r"mcp__(?:plugin_frc-toolkit_)?([\w-]+?)__", text):
             assert prefix in keys, (skill.name, prefix)
         assert not re.search(r"wpilib-(nt4|wpilog|vscode)\b|wpilib-sim(?!-check)|plugin_frc-toolkit_wpilib", text), skill.name
+        if skill.name == "frc-explain":  # it explains what the conversation already holds, so it needs no server
+            assert "Needs no server" in text
+            continue
         if skill.name == "frc-start-here":  # it surveys every server, so it says which to switch on instead of stopping
             assert "`/mcp`" in text and {"vscode", "wpilog", "sim", "nt4", "ctre-tools"} <= set(re.findall(r"`([\w-]+)`", text))
             continue

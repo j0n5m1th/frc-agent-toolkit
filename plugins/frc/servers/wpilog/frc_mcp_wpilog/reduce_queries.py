@@ -1,19 +1,20 @@
 """Reduced views of a log: `query` (one log), `compare` (several side by side) and `values_at` (a value at a time)."""
 
 from bisect import bisect_right
+from collections import Counter
 from typing import Any
 
 from frc_mcp_wpilib.errors import WPILibMCPError
 from frc_mcp_wpilib.reduce.segments import CAVEAT_FLAGS, Window
 from frc_mcp_wpilib.reduce.shared import hoist_shared
-from frc_mcp_wpilib.reduce.stats import US_PER_MS, Shaper, reduce_rows
+from frc_mcp_wpilib.reduce.stats import US_PER_MS, US_PER_S, Shaper, reduce_rows
 from frc_mcp_wpilib.values import DEFAULT_PRECISION, shape, type_field
 
 from .errors import WPILogError
 from .logfile import Topic, serialized
 from .loglike import LogLike
 from .rows import LogRow, Rows
-from .timeline import origin_us
+from .timeline import origin_us, phases
 from .windows import (
     _TIME,
     FIND_NAMES_HINT,
@@ -183,3 +184,24 @@ def values_at(
             entry["unit"] = topic.unit
         out[name] = entry
     return out
+
+
+@serialized
+def by_mode(log: LogLike, names: list[str], spec: QuerySpec) -> dict[str, Any]:
+    """The same reduction for each enabled period (auto, teleop, ...): `{"modes": {label: {"from_s", "to_s", "data": ...}}}`.
+
+    Windows follow the log's own start (`align=start`), so every time inside a mode's `data` is ms after the log started; the
+    mode's `from_s` is where its window begins. A mode that ran twice gets `teleop`, then `teleop#2`.
+    """
+    found = phases(log)
+    if not found:
+        raise WPILogError("by_mode needs Driver Station data to find the enabled periods; this log has none. Use since_ms and until_ms instead.")
+    modes: dict[str, Any] = {}
+    seen: Counter[str] = Counter()
+    for phase in found:
+        seen[phase.mode] += 1
+        label = phase.mode if seen[phase.mode] == 1 else f"{phase.mode}#{seen[phase.mode]}"
+        start_us, end_us = phase.start_us - log.start_us, phase.end_us - log.start_us
+        result = query(log, names, spec, Range("start", start_us / US_PER_MS, end_us / US_PER_MS))
+        modes[label] = {"from_s": round(start_us / US_PER_S, 1), "to_s": round(end_us / US_PER_S, 1), **{k: v for k, v in result.items() if k != "t0_s"}}
+    return {"modes": modes}

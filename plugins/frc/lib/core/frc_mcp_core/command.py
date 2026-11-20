@@ -3,6 +3,7 @@
     frc-mcp doctor                 run every server's safe `check`
     frc-mcp demo robot|log         a practice robot, or a practice log
     frc-mcp hook ask "<reason>"    print the one JSON line the plugin's PreToolUse hook answers with (make Claude Code ask first)
+    frc-mcp hook ask-outside "<reason>"    the same, but only when the tool's path or folder (read on stdin) is outside the project folder
 Servers and demos are found through package entry points (groups `frc_mcp.servers` and `frc_mcp.demos`), so this module imports no
 server; a server's spec is imported only when asked for or checked.
 """
@@ -11,8 +12,10 @@ import contextlib
 import importlib.metadata
 import io
 import json
+import os
 import sys
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -74,14 +77,41 @@ def _demo(args: Sequence[str]) -> int:
     return run(list(args[1:])) or 0
 
 
-def _hook(args: Sequence[str]) -> int:
-    """`hook ask "<reason>"`: print the PreToolUse answer that makes Claude Code ask the person first. Reads nothing, touches nothing."""
-    if len(args) != 2 or args[0] != "ask" or not args[1].strip() or "\n" in args[1]:
-        print('usage: frc-mcp hook ask "<one-line reason>"', file=sys.stderr)
-        return 0 if args[:1] in (["-h"], ["--help"]) else 2
-    answer = {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": args[1].strip()}}
+def _ask(reason: str) -> int:
+    answer = {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": reason}}
     print(json.dumps(answer, separators=(",", ":")))
     return 0
+
+
+def _ask_outside(reason: str) -> int:
+    """Read the PreToolUse payload on stdin and ask the person only when the tool's `path` or `folder` leads outside the project folder (symlinks
+    followed, `..` removed). Inside it, or with no path, it prints nothing, so Claude Code decides as usual. A payload it cannot read, or no known
+    project folder, is asked about too: the check fails closed."""
+    try:
+        payload = json.load(sys.stdin)
+        tool_input = payload.get("tool_input") or {}
+        target = tool_input.get("path") or tool_input.get("folder")
+        if not target:
+            return 0  # nothing to read elsewhere (a bare `wpilog_list`)
+        if str(target).startswith(("\\\\", "//")):  # a network share: ask before anything touches the network (resolving it would)
+            return _ask(f"{reason} ({target})")
+        project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or payload["cwd"]).resolve()
+        given = Path(str(target)).expanduser()
+        resolved = (given if given.is_absolute() else project / given).resolve()
+        if resolved.is_relative_to(project):
+            return 0
+        return _ask(f"{reason} ({resolved})")
+    except Exception:  # noqa: BLE001 - whatever went wrong, the person is asked: this check never lets a call through unread
+        return _ask(reason)
+
+
+def _hook(args: Sequence[str]) -> int:
+    """`hook ask "<reason>"`: print the PreToolUse answer that makes Claude Code ask the person first. Reads nothing, touches nothing.
+    `hook ask-outside "<reason>"`: ask only for a path outside the project folder (see `_ask_outside`)."""
+    if len(args) != 2 or args[0] not in ("ask", "ask-outside") or not args[1].strip() or "\n" in args[1]:
+        print('usage: frc-mcp hook ask|ask-outside "<one-line reason>"', file=sys.stderr)
+        return 0 if args[:1] in (["-h"], ["--help"]) else 2
+    return _ask(args[1].strip()) if args[0] == "ask" else _ask_outside(args[1].strip())
 
 
 def _run_check(key: str) -> tuple[bool, str]:

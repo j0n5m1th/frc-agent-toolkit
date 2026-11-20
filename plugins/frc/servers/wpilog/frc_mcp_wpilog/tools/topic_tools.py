@@ -71,7 +71,7 @@ async def wpilog_topics(
     offset: PageOffset = 0,
     log: LogId = None,
 ) -> ToolResult:
-    """List log topics, sorted and size-bounded (depth=1 to explore): `topics` {topic: type}, `groups` {path: count}. `total` = matching topics, `total_items` = groups + topics, `next_offset` = pass as `offset` for the rest; `props` (sample count `n` with `counts`, plus the unit), `struct_fields` (with `struct_fields`), `hidden_matches` + `hidden_examples` or `hidden_examples_omitted` (with `include_hidden`). No values."""
+    """List log topics, sorted and size-bounded (depth=1 to explore): `topics` {topic: type}, `groups` {path: count}; `total`, `next_offset` (pass as `offset` for more); `counts` adds update counts, `struct_fields` the fields of struct types; hidden matches are named only with `include_hidden`. No values."""
     opened = logs.get(log)
     criteria = TopicFilter(prefix, name_contains, type_str, include_hidden, counts)
     listing = Listing(criteria, depth, struct_fields, offset, limit)

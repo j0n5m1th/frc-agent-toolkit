@@ -79,8 +79,7 @@ PREFIX = "mcp__plugin_frc-toolkit_"
 
 
 def pre_tool_entry() -> dict:
-    (entry,) = config()["PreToolUse"]
-    return entry
+    return config()["PreToolUse"][0]  # the confirm-first entry; the second one asks about logs outside the project
 
 
 def pre_tool_hook() -> dict:
@@ -166,3 +165,65 @@ def test_the_command_refuses_anything_but_ask_with_one_reason(capsys):
     for bad in ([], ["allow", "x"], ["ask"], ["ask", ""], ["ask", "a" + chr(10) + "b"], ["ask", "a", "b"]):
         assert command.main(["hook", *bad]) == 2
     assert capsys.readouterr().out == ""
+
+
+# ---- PreToolUse hook for logs outside the project folder ----
+
+
+def outside_entry() -> dict:
+    entry = config()["PreToolUse"][1]
+    assert len(config()["PreToolUse"]) == 2
+    return entry
+
+
+def test_the_outside_logs_hook_covers_exactly_the_two_log_tools_that_take_a_path_or_folder(tools):
+    matcher = re.compile(outside_entry()["matcher"])
+    wpilog = [name for name, _tags in tools["wpilog"]]
+    assert {name for name in wpilog if matcher.search(f"{PREFIX}wpilog__{name}")} == {"wpilog_open", "wpilog_list"}
+    assert not matcher.search(f"{PREFIX}jfr__wpilog_open") and not matcher.search("wpilog_open")
+    (hook,) = outside_entry()["hooks"]
+    assert hook["args"][1:-4] == mcp_flags() and hook["args"][-4:-1] == ["frc-mcp", "hook", "ask-outside"]
+    assert hook["onFailure"] == "block" and 5 <= hook["timeout"] <= 60
+
+
+def run_outside_hook(monkeypatch, capsys, payload, project):
+    import io
+
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(payload if isinstance(payload, str) else json.dumps(payload)))
+    assert command.main(["hook", "ask-outside", "Reads elsewhere. Allow it?"]) == 0
+    return capsys.readouterr().out
+
+
+def test_the_outside_hook_stays_quiet_inside_the_project_and_asks_outside_it(monkeypatch, capsys, tmp_path):
+    project = tmp_path / "robot"
+    (project / "logs").mkdir(parents=True)
+    elsewhere = tmp_path / "usb" / "match.wpilog"
+    for tool_input in ({"path": "logs/a.wpilog"}, {"path": str(project / "logs" / "a.wpilog")}, {"folder": str(project)}, {}, {"limit": 5}, {"path": ""}):
+        assert run_outside_hook(monkeypatch, capsys, {"tool_input": tool_input}, project) == "", tool_input
+    for tool_input in ({"path": str(elsewhere)}, {"folder": str(tmp_path / "usb")}, {"path": "../usb/match.wpilog"}, {"path": "logs/../../usb/match.wpilog"}):
+        out = json.loads(run_outside_hook(monkeypatch, capsys, {"tool_input": tool_input}, project))["hookSpecificOutput"]
+        assert out["permissionDecision"] == "ask" and out["permissionDecisionReason"].startswith("Reads elsewhere. Allow it? (")
+
+
+def test_the_outside_hook_fails_closed_on_a_payload_it_cannot_read(monkeypatch, capsys, tmp_path):
+    for payload in ("not json", "[]", json.dumps({"tool_input": "oops"})):
+        out = json.loads(run_outside_hook(monkeypatch, capsys, payload, tmp_path))["hookSpecificOutput"]
+        assert out["permissionDecision"] == "ask"
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR")
+    import io
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"tool_input": {"path": "x.wpilog"}})))  # no project folder known at all
+    assert command.main(["hook", "ask-outside", "Reads elsewhere. Allow it?"]) == 0
+    assert json.loads(capsys.readouterr().out)["hookSpecificOutput"]["permissionDecision"] == "ask"
+
+
+def test_the_outside_hook_asks_about_a_network_share_without_touching_it(monkeypatch, capsys, tmp_path):
+    for target in ("\\\\attacker\\share\\x.wpilog", "//attacker/share/x.wpilog"):
+        out = json.loads(run_outside_hook(monkeypatch, capsys, {"tool_input": {"path": target}}, tmp_path))["hookSpecificOutput"]
+        assert out["permissionDecision"] == "ask" and target in out["permissionDecisionReason"]
+
+
+def test_the_outside_hook_asks_when_a_path_cannot_be_resolved(monkeypatch, capsys, tmp_path):
+    out = json.loads(run_outside_hook(monkeypatch, capsys, {"tool_input": {"path": "~nosuchuser_xyz/x.wpilog"}}, tmp_path))["hookSpecificOutput"]
+    assert out["permissionDecision"] == "ask"

@@ -34,4 +34,16 @@
     <question>In the practice log, how far had the robot driven forward (the x position in meters) 10 seconds after autonomous began? Answer with just a whole number.</question>
     <answer>15</answer>
   </qa_pair>
+  <qa_pair>
+    <question>In the practice log, what was the arm angle in whole degrees at the moment of the first elevator current spike above 40 amps during autonomous? Answer with just a whole number.</question>
+    <answer>90</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the practice log, how many times higher was the peak forward speed (vx) in autonomous than in teleop? Answer with just a whole number.</question>
+    <answer>2</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Scan the practice log for trouble. How many errors and warnings does it hold in total? Answer with just a whole number.</question>
+    <answer>2</answer>
+  </qa_pair>
 </evaluation>

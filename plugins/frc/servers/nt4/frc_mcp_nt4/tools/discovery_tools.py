@@ -150,8 +150,8 @@ async def _inspect_many(what: str, prefix: str, names: list[str], omitted: int, 
 @mcp.tool(annotations={**READ_ONLY, "title": "Inspect clients/pub/sub"}, output_schema=None)
 @tool_errors
 async def nt4_inspect(
-    what: Annotated[Literal["clients", "subscribers", "publishers", "client_subs", "client_pubs", "server_subs", "server_pubs"],
-                    Field(description="clients = who is connected; subscribers/publishers = of topic `target`; client_subs/client_pubs = of client `target`")],
+    what: Annotated[Literal["clients", "subscribers", "publishers", "client_subs", "client_pubs", "server_subs", "server_pubs"] | None,
+                    Field(description="Default clients (who is connected). subscribers/publishers = of topic `target`; client_subs/client_pubs = of client `target`")] = None,
     target: (
         Annotated[str | None, Field(description="Topic name, or client name as listed by `clients`; a topic ending in * means every topic with that prefix")]
         | Annotated[list[str] | None, Field(max_length=MAX_INSPECT_TARGETS, description="Several names (at most 10, the rest reported as omitted_targets)")]
@@ -159,6 +159,10 @@ async def nt4_inspect(
     max_rows_per_target: MaxRows = 50,
 ) -> ToolResult:
     """Why isn't my value updating? Server meta-topics decoded (who publishes/subscribes, with what options). '(server)' = the robot program; '(self)' = this connection. `target` is required except for clients, server_subs, server_pubs."""
+    if what is None:  # a bare call, or a target without a kind: the safe first step, or a hint that names the choices
+        if target:
+            raise NT4Error("Say what to inspect: what=subscribers or publishers (of the topic in `target`), or client_subs or client_pubs (of the client in `target`). what=clients lists the clients.")
+        what = "clients"
     prefix, kind = _META[what]
     if kind and not target:
         raise NT4Error(f"`target` ({kind} name) is required for what={what!r}.")

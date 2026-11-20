@@ -7,7 +7,7 @@ Ask an AI assistant about what your robot is doing **right now**. This server ta
 | See what the robot is doing **right now** | this server, `frc-mcp nt4` |
 | Look back at a match or a test run | the log server, `frc-mcp wpilog` ([WPILOG.md](WPILOG.md)) |
 
-It is not a dashboard and it is not a robot controller. NetworkTables can drop updates, and nothing can bring them back. When the connection drops or updates are lost, the answer says so instead of guessing.
+It is not a dashboard and it is not a robot controller. NetworkTables can drop updates and nothing brings them back; the answer says so.
 
 ## Set it up
 
@@ -40,6 +40,7 @@ You do not need to name tools. Describe what you want and the assistant picks on
 | `nt4_wait_for` | Waits until a value meets a condition | "Tell me when the current goes above 40 A." |
 | `nt4_capture_start`, `nt4_capture_query`, `nt4_capture_stop` | Record in the background, ask many questions, then free it | "Record the drive speed for 30 seconds." |
 | `nt4_inspect` | Who is connected, and who publishes or reads a topic | "Who publishes /Tunables/ShooterRPS?" |
+| `nt4_health` | A Systemcore (port 6810): battery, CPU, CAN, alerts, ranked | "Is the controller OK?" |
 | `nt4_set_value`, `nt4_release_publisher` | Write a value, or release what you published (off by default) | "Set /Tunables/Testing/ShooterRPS to 50." |
 
 Prompts you can pick in your assistant, if it supports them: `explore_robot`, `diagnose_mechanism`, `compare_robot_signals`, `check_signal_steadiness`, `diagnose_connection`. They only read.
@@ -57,7 +58,7 @@ Things that trip people up:
 
 ### Ways to summarize a recording (`reduce`)
 
-`nt4_watch` and `nt4_capture_query` do the math, so the assistant does not read hundreds of raw numbers. Just ask in plain words.
+`nt4_watch` and `nt4_capture_query` do the math, so the assistant does not read hundreds of raw numbers.
 
 | `reduce` | Good for | You get back |
 |---|---|---|
@@ -71,8 +72,10 @@ Things that trip people up:
 | `percentiles` | "How steady is it? Worst case?" | `min`, `p50`, `p95`, `p99`, `max` |
 | `rate` | "How fast did it move?" | units per second, and the fastest rise and fall with when |
 | `step_response` | "Did it overshoot after the setpoint changed?" | `overshoot_pct`, `rise_ms`, `settle_ms` |
+| `peaks` | "Worst spikes and dips?" | `median`, up to 5 `high` peaks above it and 5 `low` valleys below it (reverse spin: valley), as `[ms, value]`, 0.5 s apart |
+| `buckets` | "Shape of the whole run?" | min, max, sample mean per time slice; spikes are kept |
 
-`p50` is the typical value. `p95` and `p99` are the bad moments. `percentiles`, `rate` and `step_response` need number topics; for a struct, name the field (`fields=["vx"]`).
+`p50` is the typical value. `p95` and `p99` are the bad moments. `percentiles`, `rate`, `step_response`, `peaks` and `buckets` need number topics; for a struct, name the field (`fields=["vx"]`).
 
 For `step_response`, ask about the **measurement** (arm angle, shooter speed), over a window that **starts at the setpoint change**. It measures against where the signal settled, not where it was told to go. To check that, compare `final` with the setpoint topic. If the signal is still moving at the end, you get `settled: false`: record longer.
 
@@ -86,7 +89,7 @@ For `step_response`, ask about the **measurement** (arm angle, shooter speed), o
 
 **Catch a brief moment.** A capture can stop shortly after a condition happens and keep the lead-up (a *trigger*), or count each time something happens without keeping every sample (an *event rule*): "Record the elevator current. When it goes above 40 A, keep recording 2 more seconds, then show me the data around that moment." "Count every time the intake sensor turns true in the next 60 seconds."
 
-**Debug a mechanism.** "The elevator isn't moving. Find its topics and tell me what you can and can't tell." Or: "Who publishes /Tunables/Testing/ShooterRPS and who reads it?" A correlation (two things moving together) is a clue, not proof of the cause.
+**Debug a mechanism.** "The elevator isn't moving. Find its topics and tell me what you can and can't tell." Or: "Who publishes /Tunables/Testing/ShooterRPS and who reads it?"
 
 ## Captures and watches
 
@@ -108,7 +111,7 @@ Writing can move a real robot, so the server only reads until you turn it on, an
 
 ## Smaller tool lists
 
-`NT4_TOOLSET=core` hides the capture tools and the two write tools (`nt4_watch` stays): 8 tools, about 2.1k tokens of tool definitions instead of about 3.4k for all 13. See [GETTING_STARTED](GETTING_STARTED.md#6-which-servers-to-keep-on) for what each server costs.
+`NT4_TOOLSET=core` hides the capture tools and the two write tools (`nt4_watch` stays): 9 tools, about 2.0k tokens of definitions instead of about 3.7k for all 14. Server costs: [GETTING_STARTED](GETTING_STARTED.md#6-which-servers-to-keep-on).
 
 ## Troubleshooting
 
@@ -122,4 +125,4 @@ Writing can move a real robot, so the server only reads until you turn it on, an
 | Writes refused | Writing is off by default. See [SETTINGS: Safety](SETTINGS.md#safety) |
 | A capture shows about 10 Hz | You asked for a rate. Use `all_changes=true` for fast signals |
 
-Tip: look at what the tool returned, not just the assistant's summary. How the server is built: [ARCHITECTURE](ARCHITECTURE.md).
+How the server is built: [ARCHITECTURE](ARCHITECTURE.md).

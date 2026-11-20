@@ -16,14 +16,14 @@ uv run --project plugins/frc frc-mcp demo log --out logs\practice.wpilog
 uv run --project plugins/frc frc-mcp wpilog check logs\practice.wpilog
 ```
 
-These two commands need a clone of this repository. Without a clone (plugin only), use the `uvx` form in [Getting started, step 7](GETTING_STARTED.md#7-the-frc-mcp-command). `check` runs without an assistant. It shows the length, when the robot was enabled (autonomous 2 s to 17 s, teleop 19 s to 29 s) and the busiest topics. 
+These commands need a clone of this repository (plugin only: use the `uvx` form in [Getting started, step 7](GETTING_STARTED.md#7-the-frc-mcp-command)). `check` runs without an assistant and shows the length, when the robot was enabled (autonomous 2 s to 17 s, teleop 19 s to 29 s) and the busiest topics. 
 
 ### Your own logs
 
-- On a real robot, WPILib's `DataLogManager` writes `.wpilog` files to the roboRIO (or a USB stick). Copy them to your computer. In simulation, they are in the robot project's `logs` folder.
-- Live-server recordings (`nt4_capture_start` with `log=true`) are also `.wpilog`. In the plugin, copy it into your project folder.
+- On a real robot, WPILib's `DataLogManager` writes `.wpilog` files to the roboRIO (or a USB stick). Copy them to your computer, or give the assistant the full path (or `wpilog_list` `folder`): the plugin asks you first. In simulation, they are in the robot project's `logs` folder.
+- Live-server recordings (`nt4_capture_start` with `log=true`) are also `.wpilog`. In the plugin, copy it into your project folder or give its full path.
 - Driver Station logs (`.dslog`, `.dsevents`) open the same way: see [Driver Station logs](#driver-station-logs).
-- **Set `WPILOG_DIR` to the one folder that holds your logs**, with an absolute path. The server reads that folder and a few levels below it, and refuses anything outside. In the plugin, it is the folder where you started Claude Code. If it is unset, the server uses whatever folder it started in. Assistants often start servers from your home folder, so it may find nothing, or search a huge folder tree.
+- **Set `WPILOG_DIR` to the one folder that holds your logs**, with an absolute path. The server reads that folder and a few levels below it, and refuses anything outside. In the plugin, it is the folder where you started Claude Code. If unset, the server uses the folder it started in, often your home folder: it may find nothing, or search a huge tree.
 
 ## The workflow
 
@@ -35,14 +35,15 @@ You do not need tool names. Describe what you want. Times in and out are **milli
 | `wpilog_open` | Open a log and get its summary: length, when the robot was enabled (auto, teleop, test or utility, with the OpMode name on 2027 logs), match info, busiest topics. It becomes the default log |
 | `wpilog_topics` | List topics one level at a time (`depth=1`). Filter by name or type; `struct_fields=true` shows struct fields; `counts=true` shows update counts |
 | `wpilog_get_values` | Each topic's value at a moment (`at_ms`, default the end of the log) |
-| `wpilog_query` | Summarize topics over a window (`reduce`: `summary`, `latest`, `changes`, `samples`, `edges`, `durations`, `time_weighted`, `percentiles`, `rate`, `step_response`). `compare_with=[...]` asks the same question of up to three more open logs |
-| `wpilog_when` | The stretches of time a condition was true (current `> 40`), or when a value changed. `also=[...]` adds conditions on other topics that must hold at the same time |
+| `wpilog_query` | Summarize topics over a window (`reduce`: `summary`, `latest`, `changes`, `samples`, `edges`, `durations`, `time_weighted`, `percentiles`, `rate`, `step_response`, `peaks`, `buckets`). `compare_with=[...]` asks the same question of up to three more open logs |
+| `wpilog_scan` | Check a log for the usual trouble in one call: errors, loop overruns, battery sag and brownouts, link and CAN numbers, signals that stopped. `flags` are ranked high to low, and it says what it could not check |
+| `wpilog_when` | The stretches of time a condition was true (current `> 40`), or when a value changed. `also=[...]` adds conditions on other topics that must hold at the same time; `sample=[...]` reads other topics at the start of each stretch (what else was going on) |
 | `wpilog_text` | Search messages, console output and other text |
 | `wpilog_sync` (full toolset) | Put 2 to 4 open logs on one clock and open them as one log, `s1` |
 | `wpilog_diff` (full toolset) | What was set differently between two logs |
 | `wpilog_close` (full toolset) | Close a log and free its memory |
 
-Prompts, if your assistant supports them: `review_match`, `find_problems` and `scan_match`. `scan_match` checks the whole log for the usual trouble (errors, a sagging or browned-out battery, signals that stopped, odd mode changes), ranked by importance. It runs the same checks every time, so run it first on a log you have never seen.
+Prompts, if your assistant supports them: `review_match`, `find_problems` and `scan_match`. `scan_match` runs `wpilog_scan` and then checks what it flagged. Use it first on a log you have never seen.
 
 The `reduce` values mean the same as on the live server: see [the table in NT4.md](NT4.md#ways-to-summarize-a-recording-reduce).
 
@@ -50,7 +51,7 @@ Good to know:
 
 - **Topic names are the live names.** WPILib prefixes NetworkTables topics with `NT:`. The server hides that, so `/DriveState/Pose` is `/DriveState/Pose` here too. Other entries (`messages`, `DS:enabled`) keep their names.
 - **Wildcards.** A name ending in `*` means everything under that prefix.
-- **Structs** (poses, speeds) decode into dotted fields. Use `fields=["vx"]`. `percentiles`, `rate` and `step_response` need `fields` for a struct.
+- **Structs** (poses, speeds) decode into dotted fields. Use `fields=["vx"]`. `percentiles`, `rate`, `step_response`, `peaks` and `buckets` need `fields` for a struct.
 - **Held values.** A value holds until its next update. A topic that did not change in your window reports what it held (`held`). A condition true at the last update is marked `true_at_end`.
 - **Several logs.** Each `wpilog_open` gives an id (`l1`, `l2`, ...). Tools use the newest log unless you pass `log`.
 
@@ -66,7 +67,7 @@ A log's clock starts when the robot program started, so "12.3 s" means little al
 
 With `align=auto`, "5 s" means five seconds after autonomous began, which matches what you saw on the field. Times before time zero are negative.
 
-The enabled periods come from the first of these sources the log has (the same places AdvantageScope looks): the Driver Station entries WPILib logs (`DS:enabled`, `DS:autonomous`, `DS:test`, or `DS:controlWord` in 2027); AdvantageKit's (`/DriverStation/Enabled` with `/DriverStation/RobotMode`, or the older `Autonomous` and `Test`, also under `/AdvantageKit/`); the `ControlWord` the Driver Station publishes over NetworkTables, or the older `/FMSInfo/FMSControlData`; the new FIRST Driver Station's `DS:/Dscomm/Control/Robot/ControlData/ControlWord`; and Phoenix's `RobotEnable` and `RobotMode` in a converted `.hoot`.
+The enabled periods come from the first of these the log has (the places AdvantageScope looks): WPILib's `DS:` entries (`DS:enabled`, `DS:autonomous`, `DS:test`, or `DS:controlWord` in 2027); AdvantageKit's `/DriverStation/Enabled` and `RobotMode` (also under `/AdvantageKit/`); the `ControlWord` over NetworkTables or `/FMSInfo/FMSControlData`; the FIRST Driver Station's `ControlWord`; Phoenix's `RobotEnable` and `RobotMode` in a converted `.hoot`.
 
 - **Not checked against a real log here:** the number decodings (`FMSControlData`, the FIRST Driver Station's control word). They follow AdvantageScope.
 - **Seen in real Systemcore logs:** AdvantageKit's `RobotMode` was `UNKNOWN`. The server then shows mode `unknown`: enabled, but no mode named.
@@ -78,19 +79,19 @@ A log holds only **what the robot recorded**. Timing is the update's own timesta
 
 ## Worked examples
 
-The "You should see" lines are what the practice log gives, so you can check the assistant got it right.
+**Open a log.** "Open practice.wpilog and tell me when the robot was enabled." You should see 30 seconds, autonomous from 2 s to 17 s, teleop from 19 s to 29 s, the event "Practice Field" (match 7).
 
-**Open a log.** "Open practice.wpilog and tell me when the robot was enabled." You should see 30 seconds, autonomous from 2 s to 17 s, teleop from 19 s to 29 s, the event "Practice Field" (match 7). A real log has hundreds of topics, so ask "what topics are in this log? One level." first.
+**A value at a moment.** "Where was the robot (x and y) when teleop started?"
 
-**A value at a moment.** "Where was the robot (x and y) when teleop started?" Say "into autonomous" and the assistant zeroes time there.
+**Measure a signal.** "How steady was the battery voltage? What was the worst dip?" You should see 11.475 V to 12.6 V, dipping while the elevator draws current.
 
-**Measure a signal.** "How steady was the battery voltage? What was the worst dip?" You should see 11.475 V to 12.6 V, dipping while the elevator draws current. "How fast did the arm move?" shows up to 24 degrees per second.
+**When did it happen.** "When did the elevator draw more than 40 amps? Use times since autonomous started." You should see seven 0.4 s spikes, 5 s apart (the first is before autonomous, so its time is negative). Add "while the robot was in autonomous" (`also`) and three remain, at 3 s, 8 s and 13 s.
 
-**When did it happen.** "When did the elevator draw more than 40 amps? Use times since autonomous started." You should see 0.4 s spikes every 5 s, seven in all (the first is before autonomous, so its time is negative). Add "while the robot was in autonomous" (`also`) and only the three inside it remain, at 3 s, 8 s and 13 s.
+**Compare two runs.** Open both, then: "Compare the elevator current in the two logs, using times since autonomous started in each." For settings, ask "What did we change between these two matches?" (`wpilog_diff`). It lists tunables and constants that differ, that only one log has, or that changed during one. Busy signals (over 2,000 updates) are skipped. `prefix="/Tunables/"` narrows it.
 
-**Messages.** "What errors and warnings happened?" You should see a warning at 12 s ("battery voltage below 12 V") and an error at 22 s ("arm limit switch not found").
+**Scan for trouble.** "Scan this log." `wpilog_scan` runs the same checks every time and returns ranked `flags`: errors, loop overruns, battery below 10 V or 7 V, brownouts, packet loss, CAN use, signals that stopped. It finds the battery and link topics by name, so a team with other names gets `checked: false` for that part.
 
-**Compare two runs.** Open both logs, then: "Compare the elevator current in the two logs, using times since autonomous started in each." For settings, ask "What did we change between these two matches?" (`wpilog_diff`). It lists tunables and constants whose value differs, that only one log has, or that changed during only one. Busy signals (over 2,000 updates) are skipped, because they differ between any two matches. `prefix="/Tunables/"` narrows it.
+**Auto against teleop.** `by_mode=true` on `wpilog_query` answers once per enabled period. `sample` on `wpilog_when` reads other topics at each stretch start ("arm angle each time the current went over 40 A"). `name_contains` takes `a|b`.
 
 **Review a match.** "Review this match. Tell me when we were enabled, what errors happened, and anything strange. Say what you can't tell from the log."
 
@@ -114,7 +115,7 @@ A log never enabled cannot be synced by edges. A Systemcore has no battery clock
 
 ## Driver Station logs
 
-For each session, the Driver Station laptop saves two files with the same name in `C:\Users\Public\Documents\FRC\Log Files`. The `.dslog` records, 50 times a second, battery voltage, brownouts, network and CPU numbers, the robot's mode and the current on each power channel. The `.dsevents` holds messages (errors, warnings, prints, "FMS Connected"). In the plugin, copy them into your project folder; else point `WPILOG_DIR` at the folder. `wpilog_list` shows each session once, and opening either file opens both.
+For each session, the Driver Station laptop saves two files with the same name in `C:\Users\Public\Documents\FRC\Log Files`. The `.dslog` records, 50 times a second, battery voltage, brownouts, network and CPU numbers, the robot's mode and each power channel's current. The `.dsevents` holds messages (errors, warnings, prints, "FMS Connected"). In the plugin, give the full path of the folder (the assistant asks you first), or copy them in; else point `WPILOG_DIR` at it. `wpilog_list` shows each session once, and opening either file opens both.
 
 | Topic | What it is |
 |---|---|
@@ -143,7 +144,7 @@ Settings are in [SETTINGS](SETTINGS.md#every-other-setting) (`WPILOG_DIR`, `WPIL
 - `WPILOG_TOOLSET=core` hides `wpilog_diff`, `wpilog_sync` and `wpilog_close` (about 2.2k tokens of definitions instead of 2.7k).
 - A log cut short (power lost while logging) opens with a warning. Everything before the cut is readable.
 
-**Time.** Opening reads the whole file once. Measured on a laptop: about 25 seconds for a 230 MB log with 15 million updates, and about 9 seconds for a real 225 MB log with 5.3 million updates. Topics with 2,000 updates or fewer are read in that pass. The first question about a busier topic reads the file again (about 6 seconds on a real 225 MB log). Later questions about it are instant.
+**Time.** Opening reads the whole file once. Measured on a laptop: about 25 seconds for a 230 MB log with 15 million updates, and about 9 seconds for a real 225 MB log with 5.3 million. Topics with 2,000 updates or fewer are read in that pass; the first question about a busier topic reads the file again (about 6 seconds); later ones are instant.
 
 ## Troubleshooting
 

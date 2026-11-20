@@ -1,8 +1,9 @@
-"""Data tools: wpilog_get_values, wpilog_query, wpilog_when, wpilog_text and wpilog_diff."""
+"""Data tools: wpilog_get_values, wpilog_query, wpilog_when, wpilog_text, wpilog_diff and wpilog_scan."""
 
 import asyncio
 from typing import Annotated, Any
 
+from fastmcp.exceptions import ToolError
 from fastmcp.tools import ToolResult
 from pydantic import Field
 
@@ -33,6 +34,7 @@ from ..app import (
     mcp,
     tool_errors,
 )
+from ..scan_queries import scan
 from ..store import logs
 
 Names = Annotated[list[str], Field(min_length=1, max_length=50, description="Topic names; a trailing * means every topic under that prefix, e.g. ['/Robot/Shooter/*']")]
@@ -67,11 +69,19 @@ async def wpilog_query(
     max_topics: MaxTopics = 40,
     log: LogId = None,
     compare_with: Annotated[list[str] | None, Field(max_length=3, description="More open log ids: ask each the same question, side by side per topic (before/after a change); each log aligns on its own")] = None,
+    by_mode: Annotated[bool, Field(description="Answer once per enabled period (auto, teleop, ...); times are ms from log start")] = False,
 ) -> ToolResult:
     """Log data over a window, reduced; times are ms after time zero (`align`). Shows what was logged (updates the robot never recorded are invisible). A topic that cannot be reduced gets its own err. Unchanging topics are under `constants`; `all` holds fields every topic shares."""
     spec = queries.QuerySpec(reduce=reduce, fields=fields, threshold=threshold, max_samples=max_samples,
                              max_topics=max_topics, precision=DEFAULT_PRECISION)
     window = queries.Range(align, since_ms, until_ms)
+    if by_mode:
+        if compare_with:
+            raise ToolError("by_mode and compare_with cannot be combined; run them one at a time.")
+        if since_ms is not None or until_ms is not None or align != "start":
+            raise ToolError("by_mode uses each enabled period as the window; leave since_ms, until_ms and align unset (times are ms from log start).")
+        out = await asyncio.to_thread(queries.by_mode, logs.get(log), topics, spec)
+        return reply(out, topics=len(topics) * len(out["modes"]))
     if compare_with:
         picked = logs.pick([logs.resolve(log), *compare_with])
         out = await asyncio.to_thread(queries.compare, picked, topics, spec, window)
@@ -93,11 +103,12 @@ async def wpilog_when(
     max_intervals: Limit = 20,
     log: LogId = None,
     also: Also = None,
+    sample: Annotated[list[str] | None, Field(max_length=5, description="Topics to read at the start of each interval or change; `sampled` lists line up with them")] = None,
 ) -> ToolResult:
     """When a condition was true, e.g. current > 40: count, total and longest ms, and [start,end] ms intervals. A value holds until the next update. `also` narrows it to when other conditions held too."""
     opened = logs.get(log)
     out = await asyncio.to_thread(queries.when, opened, topic, op, value, field, queries.Range(align, since_ms, until_ms),
-                                  max_intervals, also or ())
+                                  max_intervals, also or (), sample or ())
     return reply(out)
 
 
@@ -131,3 +142,11 @@ async def wpilog_text(
     opened = logs.get(log)
     out = await asyncio.to_thread(queries.search_text, opened, topics, name_contains, queries.Range(align, since_ms, until_ms), limit)
     return reply(out)
+
+
+@mcp.tool(annotations={**READ_ONLY_LOCAL, "title": "Scan a log for trouble"}, output_schema=None)
+@tool_errors
+async def wpilog_scan(log: LogId = None) -> ToolResult:
+    """Usual trouble in one call: errors, loop overruns, battery sag, brownouts, link and CAN numbers, stopped signals. `flags` rank high to low; times are s after first auto."""
+    opened = logs.get(log)
+    return reply(await asyncio.to_thread(scan, opened))

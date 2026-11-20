@@ -2,6 +2,7 @@
 
 import logging
 import math
+from bisect import bisect_right
 from collections.abc import Sequence
 from typing import Any, NamedTuple
 
@@ -16,6 +17,7 @@ from frc_mcp_wpilib.conditions import (
 )
 from frc_mcp_wpilib.reduce.models import Condition
 from frc_mcp_wpilib.reduce.stats import US_PER_MS
+from frc_mcp_wpilib.values import DEFAULT_PRECISION, shape
 
 from .errors import WPILogError
 from .logfile import Topic, serialized
@@ -116,6 +118,7 @@ def when(
     window: Range,
     max_intervals: int,
     also: Sequence[Condition] = (),
+    sample: Sequence[str] = (),
 ) -> dict[str, Any]:
     """The stretches of time a condition on one topic was true (each update's value holds until the next).
     With `also`, only the stretches when every condition held at once. With op `changed` it returns the change times instead
@@ -135,10 +138,12 @@ def when(
     log.rows([c.topic for c in clauses])  # one pass over the file for every topic the clauses read (the reads below hit the cache)
     log_end_ms = (log.end_us - origin) / US_PER_MS
     if window.since_ms is not None and window.since_ms > log_end_ms:  # the window opens after the last record: nothing was recorded
-        return {"n": 0, "changes_ms": []} if op == "changed" else {"n": 0, "total_ms": 0.0, "intervals_ms": []}
+        empty = {"n": 0, "changes_ms": []} if op == "changed" else {"n": 0, "total_ms": 0.0, "intervals_ms": []}
+        return _with_samples(log, empty, [], sample, origin)  # still checks the names
     end_ms = log_end_ms if window.until_ms is None else min(window.until_ms, log_end_ms)  # a value holds only as long as the log
     if op == "changed":
-        return _changes(_window_rows(log, name, window, origin), max_intervals)
+        changed, raw_times = _changes(_window_rows(log, name, window, origin), max_intervals)
+        return _with_samples(log, changed, raw_times, sample, origin)
     per_condition = [
         _intervals(_window_rows(log, c.topic, window, origin), log.topics[c.topic], c.op, c.value, c.field, end_ms)
         for c in clauses
@@ -156,12 +161,36 @@ def when(
         out["omitted"] = len(intervals) - len(shown)
     if still_true:
         out["true_at_end"] = True
-    return out
+    return _with_samples(log, out, [s for s, _ in shown], sample, origin)
 
 
-def _changes(rows: list[tuple[float, Any]], limit: int) -> dict[str, Any]:
+def _changes(rows: list[tuple[float, Any]], limit: int) -> tuple[dict[str, Any], list[float]]:
+    """The reply, and the unrounded change times it lists (`sample` looks values up at those, not at the rounded ones)."""
     times = [t for (_, a), (t, b) in zip(rows, rows[1:], strict=False) if not values_equal(a, b)]
     out: dict[str, Any] = {"n": len(times), "changes_ms": [round(t, 1) for t in times[:limit]]}
     if len(times) > limit:
         out["omitted"] = len(times) - limit
+    return out, times[:limit]
+
+
+def _with_samples(log: LogLike, out: dict[str, Any], times_ms: list[float], sample: Sequence[str], origin: int) -> dict[str, Any]:
+    """Add `sampled`: for each topic in `sample`, its value at each listed time (parallel to the intervals' starts or the changes)."""
+    if not sample:
+        return out
+    missing = [n for n in sample if n not in log.topics]
+    if missing:
+        raise WPILogError(f"{missing[0]!r} is {NOT_IN_LOG} ({FIND_NAMES_HINT}).")
+    names = list(dict.fromkeys(sample))
+    sampled: dict[str, Any] = {}
+    for name, rows in log.rows(names).items():
+        topic = log.topics[name]
+        if (why := topic.unusable_for("`sample`")) is not None:
+            raise WPILogError(why)
+        stamps = [(t - origin) / US_PER_MS for t, _ in rows]
+        values = []
+        for at in times_ms:
+            i = bisect_right(stamps, at)
+            values.append(shape(rows[i - 1][1], topic.type_str, None, DEFAULT_PRECISION) if i else None)
+        sampled[name] = values
+    out["sampled"] = sampled
     return out
