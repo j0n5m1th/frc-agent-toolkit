@@ -50,7 +50,7 @@ It listens on port 5810 on your computer. The plugin's `nt4_host` setting is `12
    uvx --python 3.13 --from "git+https://github.com/j0n5m1th/frc-agent-toolkit@<tag>#subdirectory=plugins/frc" frc-mcp nt4 check --host 10.12.34.2
    ```
 
-The settings apply to every project. Read [Safety](SETTINGS.md#safety) before you turn on any "Allow" switch.
+The settings apply to every project. Read [Safety](SAFETY.md#safety) before you turn on any "Allow" switch.
 
 ## 5. Other assistants
 

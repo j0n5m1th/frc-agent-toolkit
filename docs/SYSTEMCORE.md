@@ -7,7 +7,7 @@ Ask an assistant about the **Systemcore**, the FRC robot controller: find it on 
 | Find the controller, check CPU, memory, disk, temperature | this server |
 | Get a support bundle for Ghost CSA | this server |
 | Download a match log, then read it | this server, then the [log server](WPILOG.md) |
-| See CAN devices and their faults | the CTRE diagnostic reader ([CTRE](CTRE.md#phoenix-diagnostic-server-reader-ctre-diag)) |
+| See CAN devices and their faults | the CTRE diagnostic reader ([CTRE](CTRE_DEVICES.md#phoenix-diagnostic-server-reader-ctre-diag)) |
 | Read robot values live | the [live server](NT4.md) (faults, CAN down counts and brownout are under `/sys` on the controller's hub, port 6810: **seen** on image alpha14; the `systemcore-live` skill reads it, read-only) |
 | Build and deploy robot code | the [commands server](VSCODE.md) |
 
@@ -104,7 +104,7 @@ The web update (`http://robot.local/configure`) keeps robot logs only if "Retain
 
 ## Safety
 
-The shared rules are in [SETTINGS: Safety](SETTINGS.md#systemcore). These are the hard ones for this server:
+The shared rules are in [SETTINGS: Safety](SAFETY.md#systemcore). These are the hard ones for this server:
 
 - **Never port 1740.** It is the Driver Station's only slot; any connection evicts the Driver Station.
 - **Never** the diagnostics endpoints `/api/wifi` (returns the Wi-Fi passphrase), `/api/disk/largest*` or `/api/logs/journal-stats` (they wedge the controller's sensors).

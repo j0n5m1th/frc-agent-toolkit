@@ -95,16 +95,15 @@ def tool_names(key: str) -> set[str]:
 
 
 def test_the_nt4_and_wpilog_guides_name_every_tool_of_their_server():
-    for key, guide in (("nt4", "NT4.md"), ("wpilog", "WPILOG.md")):
-        text = (ROOT / "docs" / guide).read_text(encoding="utf-8")
+    for key, guide in (("nt4", ("NT4.md",)), ("wpilog", ("WPILOG.md", "WPILOG_ADVANCED.md"))):
         tools = tool_names(key)
         assert len(tools) > 8, key  # the search found the server
-        missing = sorted(name for name in tools if f"`{name}`" not in text)
-        assert not missing, f"docs/{guide} does not mention: {missing}"
+        missing = sorted(name for name in tools if f"`{name}`" not in doc_text(*guide))
+        assert not missing, f"docs/{guide[0]} does not mention: {missing}"
 
 
 def test_the_server_guides_keep_to_their_length():
-    for guide, low, high in (("NT4.md", 1100, 2000), ("WPILOG.md", 1350, 2650)):
+    for guide, low, high in (("NT4.md", 1100, 2000), ("WPILOG.md", 1100, 1900), ("WPILOG_ADVANCED.md", 800, 1500)):
         words = len((ROOT / "docs" / guide).read_text(encoding="utf-8").split())
         assert low <= words <= high, f"docs/{guide} has {words} words (allowed {low} to {high})"
 
@@ -115,8 +114,13 @@ def test_the_docs_that_were_merged_are_gone():
     assert not (ROOT / "evaluations" / "BENCHMARKS.md").exists()
 
 
+def doc_text(*names: str) -> str:
+    """The text of one guide that is split over several files."""
+    return "\n".join((ROOT / "docs" / name).read_text(encoding="utf-8") for name in names)
+
+
 def test_the_ctre_guide_names_every_tool_of_the_five_ctre_servers():
-    text = (ROOT / "docs" / "CTRE.md").read_text(encoding="utf-8")
+    text = doc_text("CTRE.md", "CTRE_DEVICES.md")
     for key in ("ctre-tools", "ctre-owlet", "ctre-passerine", "ctre-caniv", "ctre-diag"):
         tools = tool_names(key)
         assert tools, key
@@ -143,15 +147,19 @@ def test_the_sim_vscode_and_jfr_guides_name_every_tool_of_their_server():
 
 
 def test_the_other_docs_keep_to_their_length():
-    # Targets from the docs plan; the band is -25% and +30%. ARCHITECTURE.md is 3000 (was 2850 before the result-status note, 2200 before that) because it also holds the
-    # design notes moved out of code comments. GETTING_STARTED.md is 950 (was 800) and SETTINGS.md 2350 (was 2100) after
-    # review round 1 added the first-run steps, the plugin's fixed folders and the hook-failure note. Review round 2 (second pass) raised SYSTEMCORE to 1250 (IPv6 host rule) and SETTINGS to 2550 (minimum version, hook runs, redirects, `.env` quote). Learning mode raised SETTINGS to 2850 (one table row). Review round 3 raised SETTINGS to 2800 (`.env` rules, masked errors, NT4 host rule, drive-root setting). Review round 2 raised GETTING_STARTED to 1000, JFR and FAQ to 550 and SETTINGS to 2450 (no-uv note, too-broad folder, redirect, port 1740, reconnect).
-    for guide, target in (("CTRE.md", 1800), ("SYSTEMCORE.md", 1250), ("SIM.md", 500), ("VSCODE.md", 500), ("JFR.md", 550), ("GETTING_STARTED.md", 1000), ("FAQ.md", 550), ("ARCHITECTURE.md", 3000)):
+    # Targets from the docs plan; the band is -25% and +30%. The big guides were split (ARCHITECTURE, SETTINGS, WPILOG, CTRE) so that no
+    # file is overwhelming to read; each part has its own target.
+    for guide, target in (("CTRE.md", 1450), ("CTRE_DEVICES.md", 870), ("SYSTEMCORE.md", 1250), ("SIM.md", 500), ("VSCODE.md", 500), ("JFR.md", 550), ("GETTING_STARTED.md", 1000),
+                          ("FAQ.md", 550), ("ARCHITECTURE.md", 1750), ("ARCHITECTURE_SERVERS.md", 1150), ("ARCHITECTURE_NOTES.md", 930), ("SETTINGS.md", 1700), ("SAFETY.md", 1150)):
         words = len((ROOT / "docs" / guide).read_text(encoding="utf-8").split())
         low, high = int(target * 0.75), int(target * 1.3)
         assert low <= words <= high, f"docs/{guide} has {words} words (allowed {low} to {high})"
-    words = len((ROOT / "docs" / "SETTINGS.md").read_text(encoding="utf-8").split())
-    assert words <= 2850, f"docs/SETTINGS.md has {words} words (most of it is the settings table)"
+
+
+def test_no_guide_is_overwhelming():
+    """A guide longer than this is split into parts, each with a pointer to the others."""
+    too_long = {path.name: len(path.read_text(encoding="utf-8").split()) for path in (ROOT / "docs").glob("*.md")}
+    assert not {name: words for name, words in too_long.items() if words > 2000}
 
 
 def test_contributing_and_agents_stay_short():
@@ -179,24 +187,24 @@ def test_docs_do_not_say_servers_start_off_or_name_an_undocumented_command():
 
 
 def test_docs_say_plugin_folders_are_fixed_and_nt4_writes_need_your_own_entry():
-    settings = (ROOT / "docs" / "SETTINGS.md").read_text(encoding="utf-8")
+    settings = doc_text("SETTINGS.md", "SAFETY.md")
     assert "copy it into your project folder" in settings
     assert "Writes cannot be turned on from the plugin dialog" in settings and "onFailure" in settings
 
 
 def test_docs_state_the_minimum_claude_code_version_and_what_the_hook_does_without_it():
-    for name in ("README.md", "docs/GETTING_STARTED.md", "docs/SETTINGS.md", "plugins/frc/README.md"):
+    for name in ("README.md", "docs/GETTING_STARTED.md", "docs/SAFETY.md", "plugins/frc/README.md"):
         assert "2.1.295" in (ROOT / name).read_text(encoding="utf-8"), name
     hooks = json.loads((PLUGIN / "hooks" / "hooks.json").read_text(encoding="utf-8"))
     assert '"onFailure": "block"' in json.dumps(hooks, indent=2)  # the reason for the minimum version
-    settings = (ROOT / "docs" / "SETTINGS.md").read_text(encoding="utf-8")
+    settings = doc_text("SETTINGS.md", "SAFETY.md")
     assert "a failed hook lets calls through" in settings and "not tested in a real session" not in settings
 
 
 def test_docs_do_not_overclaim_or_contradict_the_code():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "The servers only read" not in readme and "Gradle" in readme
-    settings = (ROOT / "docs" / "SETTINGS.md").read_text(encoding="utf-8")
+    settings = doc_text("SETTINGS.md", "SAFETY.md")
     assert "never follows a redirect from a device" in settings and "do follow redirects" in settings
     assert "`NT4_ALLOW_WRITES` and `NT4_WRITE_PREFIXES` are not in it" in settings
     env = json.loads((PLUGIN / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["nt4"]["env"]

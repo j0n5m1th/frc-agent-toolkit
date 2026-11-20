@@ -2,7 +2,7 @@
 
 It owns the ntcore instance and the per-connection bookkeeping (discovery, meta-topic and schema subscriptions, the
 publisher registry, the capture registry); the work is in `access/`, `capture/` and `schema_listener.py`. Why one shared
-connection: docs/ARCHITECTURE.md.
+connection: docs/ARCHITECTURE_SERVERS.md.
 """
 
 import asyncio

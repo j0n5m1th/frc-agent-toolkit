@@ -2,7 +2,7 @@
 
 `wpilog_sync` finds the offset that turns each log's time into the first log's time. Methods: `enable` (line up the
 enable/disable edges, error is tens of ms), `clock` (wall-clock times, a fallback or a cross-check), `manual` (the caller
-gives each offset). Why edges come first: docs/ARCHITECTURE.md.
+gives each offset). Why edges come first: docs/ARCHITECTURE_NOTES.md.
 """
 
 import bisect

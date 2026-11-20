@@ -1,6 +1,6 @@
 # Diagnose notes
 
-Read this when a `diag_*` tool gives an error, or you need to explain a reading. Facts come from `docs/CTRE.md`. "Seen" means seen on a real Systemcore (image alpha14, diagnostic server 2026.70.0, one Pigeon 2); "not tried" means nobody has tried it.
+Read this when a `diag_*` tool gives an error, or you need to explain a reading. Facts come from `docs/CTRE_DEVICES.md`. "Seen" means seen on a real Systemcore (image alpha14, diagnostic server 2026.70.0, one Pigeon 2); "not tried" means nobody has tried it.
 
 ## What each tool does
 

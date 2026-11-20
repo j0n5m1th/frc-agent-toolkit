@@ -23,7 +23,7 @@ Not by default.
 - **The simulation tools run the simulator on your computer, not the robot.**
 - **Some tools have no switch.** They build, test and simulate in your project folder, and edit your project files (team number, vendordeps). They stay inside the folders you allow.
 
-Turn each "Allow" switch off again after you use it. The full list is in [SETTINGS.md](SETTINGS.md#safety).
+Turn each "Allow" switch off again after you use it. The full list is in [SAFETY.md](SAFETY.md#safety).
 
 ## Who owns code the assistant writes?
 

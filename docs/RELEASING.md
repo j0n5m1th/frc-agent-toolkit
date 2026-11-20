@@ -23,6 +23,6 @@ Do this before each release, in a throwaway profile, never your real one. It is 
 4. Quit. Check that no `python.exe` or `uv.exe` is left running (on Windows `uv run` stays a parent process).
 5. Turn the network off and start a new session. Check that every server still starts (competition venues often have no internet).
 6. Install the next version (or bump a test version). Check that the update syncs again and the servers start offline after the update too.
-7. Check that a gated tool still asks for confirmation in auto-accept mode and in bypass mode (the confirm-first hook). Write down which modes you did NOT check (`bypassPermissions`, macOS, Linux), and put what you found in [The confirm-first hook](SETTINGS.md#the-confirm-first-hook).
+7. Check that a gated tool still asks for confirmation in auto-accept mode and in bypass mode (the confirm-first hook). Write down which modes you did NOT check (`bypassPermissions`, macOS, Linux), and put what you found in [The confirm-first hook](SAFETY.md#the-confirm-first-hook).
 
 If a cold start always works without the pre-sync hook, remove the hook.

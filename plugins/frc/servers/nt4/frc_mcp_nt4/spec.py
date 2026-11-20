@@ -1,7 +1,7 @@
 """The NT4 server's `SPEC`: what it is, its `check`, its command line (`frc-mcp nt4`), and what follows the toolset.
 
 Importing this module imports no tool and no `ntcore`, and builds no server. NT4_TOOLSET=core hides the capture and write
-tools; `SPEC.serve()` reads the setting at start and `apply_toolset()` re-reads it. Module layout: docs/ARCHITECTURE.md.
+tools; `SPEC.serve()` reads the setting at start and `apply_toolset()` re-reads it. Module layout: docs/ARCHITECTURE_SERVERS.md.
 """
 
 import argparse

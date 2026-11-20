@@ -1,5 +1,5 @@
 """Lifecycle and queries of a `Capture`: it records chosen topics into a bounded buffer (optionally a .wpilog file), and the
-model later asks for a reduced view (latest, summary, changes, samples). Why it works this way: docs/ARCHITECTURE.md.
+model later asks for a reduced view (latest, summary, changes, samples). Why it works this way: docs/ARCHITECTURE_SERVERS.md.
 """
 
 import asyncio

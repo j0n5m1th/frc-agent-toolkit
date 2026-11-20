@@ -1,6 +1,6 @@
 """The CANivore server's `SPEC`: what it is, its `check` and its command line (`mcp-ctre-caniv`; not available on macOS).
 
-Layout (see also `docs/ARCHITECTURE.md`): `config.py` settings and the two permission switches; `caniv.py` running caniv and reading what it prints; `tools/` the
+Layout (see also `docs/ARCHITECTURE_SERVERS.md`): `config.py` settings and the two permission switches; `caniv.py` running caniv and reading what it prints; `tools/` the
 MCP tools; `app.py` the FastMCP instance. Finding and choosing the tool, the folder rules and the firmware index are `frc_mcp_ctre`.
 """
 

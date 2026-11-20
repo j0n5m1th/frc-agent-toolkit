@@ -102,7 +102,7 @@ A **watch** records for a few seconds and gives one answer. A **capture** keeps 
 
 ## Writing (off by default)
 
-Writing can move a real robot, so the server only reads until you turn it on, and only for the topic paths you list. The rules are in [SETTINGS: Safety](SETTINGS.md#safety). Use the simulation. **The plugin cannot turn writes on:** the dialog has no field for `NT4_ALLOW_WRITES` or `NT4_WRITE_PREFIXES`, so you need your own server entry ([SETTINGS](SETTINGS.md#how-to-set-the-ones-that-are-not-in-the-dialog)). A few facts about writes:
+Writing can move a real robot, so the server only reads until you turn it on, and only for the topic paths you list. The rules are in [SETTINGS: Safety](SAFETY.md#safety). Use the simulation. **The plugin cannot turn writes on:** the dialog has no field for `NT4_ALLOW_WRITES` or `NT4_WRITE_PREFIXES`, so you need your own server entry ([SETTINGS](SETTINGS.md#how-to-set-the-ones-that-are-not-in-the-dialog)). A few facts about writes:
 
 - `nt4_set_value` with `default=true` only sets a value nobody else has set. The result says whether yours stuck (`default_applied`).
 - `publisher_ttl_s` (up to 3600) releases this server's publisher after a while. It is best effort, not a safety interlock. `read_back=true` shows this client's own view, which is not proof the robot acted.
@@ -122,7 +122,7 @@ Writing can move a real robot, so the server only reads until you turn it on, an
 | A topic is `not announced` | The name is wrong (try `nt4_list_topics` with `name_contains`) or nothing publishes it yet |
 | `Port 1740 ...` or `not a robot-network address` | `nt4_connection` never uses the Driver Station's port 1740 or a public IP. Use port 5810 and a robot or simulator address |
 | Port 5811 or a `wss://` address | Secure NT4 is not supported. Use plain port 5810 |
-| Writes refused | Writing is off by default. See [SETTINGS: Safety](SETTINGS.md#safety) |
+| Writes refused | Writing is off by default. See [SETTINGS: Safety](SAFETY.md#safety) |
 | A capture shows about 10 Hz | You asked for a rate. Use `all_changes=true` for fast signals |
 
 How the server is built: [ARCHITECTURE](ARCHITECTURE.md).
